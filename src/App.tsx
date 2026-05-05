@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/dashboard/Dashboard'
 import ProfileCompletion from './pages/onboarding/ProfileCompletion'
+import ExercisesPage from './pages/exercises/ExercisesPage'
+import PackagesPage from './pages/packages/PackagesPage'
 import { getStoredUser } from './services/auth'
 
 function AuthGate() {
@@ -41,6 +43,22 @@ export default function App() {
           element={
             <RequireAuth>
               <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/exercises"
+          element={
+            <RequireAuth>
+              <ExercisesPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/packages"
+          element={
+            <RequireAuth>
+              <PackagesPage />
             </RequireAuth>
           }
         />

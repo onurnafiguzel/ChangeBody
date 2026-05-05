@@ -1,5 +1,5 @@
 import api from './api'
-import type { UserDto, CompleteProfileRequest, ActiveProgramDetailDto } from '../types/api.types'
+import type { UserDto, CompleteProfileRequest, ActiveProgramDetailDto, WaitingUserStatusDto } from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
 
 export async function getUserProfile(userId: string): Promise<UserDto> {
@@ -14,4 +14,15 @@ export async function completeProfile(userId: string, payload: CompleteProfileRe
 export async function getUserActiveProgram(userId: string): Promise<ActiveProgramDetailDto> {
   const { data } = await api.get<ActiveProgramDetailDto>(API_ENDPOINTS.USER_ACTIVE_PROGRAM(userId))
   return data
+}
+
+export async function getWaitingUserStatus(userId: string): Promise<WaitingUserStatusDto | null> {
+  try {
+    const { data } = await api.get<WaitingUserStatusDto>(API_ENDPOINTS.WAITING_USER_STATUS(userId))
+    return data
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { status?: number } }
+    if (axiosErr.response?.status === 404) return null
+    throw err
+  }
 }

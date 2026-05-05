@@ -912,6 +912,30 @@
         }
       }
     },
+        "/api/exercises/muscle-groups": {
+      "get": {
+        "tags": ["Exercises"],
+        "summary": "Get all distinct muscle groups",
+        "description": "Returns a sorted list of all unique muscle groups present in the active exercise library. No authentication required.",
+        "operationId": "GetMuscleGroups",
+        "responses": {
+          "200": {
+            "description": "Muscle groups retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": ["Abs", "Back", "Biceps", "Calves", "Chest", "Forearms", "Glutes", "Hamstrings", "LatissimusDorsi", "Legs", "LowerBack", "Obliques", "Quadriceps", "Shoulders", "Traps", "Triceps"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/exercises": {
       "get": {
         "tags": ["Exercises"],
@@ -1460,6 +1484,71 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+        "/api/waiting-users": {
+      "get": {
+        "tags": ["Waiting Users"],
+        "summary": "List all users waiting for coach assignment (Coach or Admin only)",
+        "operationId": "GetWaitingUsers",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Waiting users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/UserAssignmentDto" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "403": {
+            "description": "Forbidden — coach or admin role required",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    },
+    "/api/waiting-users/{userId}": {
+      "get": {
+        "tags": ["Waiting Users"],
+        "summary": "Get waiting status for a specific user",
+        "description": "Users can only query their own status. Coaches and admins may query any user.",
+        "operationId": "GetWaitingUserStatus",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "User ID (GUID)",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Waiting status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WaitingUserStatusDto" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — users can only query their own status",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "404": {
+            "description": "No waiting record found for user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
           }
         }
       }
@@ -2329,6 +2418,16 @@
           }
         }
       },
+      "WaitingUserStatusDto": {
+        "type": "object",
+        "properties": {
+          "isWaitingForAssignment": {
+            "type": "boolean",
+            "description": "true = waiting for a coach to be assigned, false = already assigned"
+          },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
       "ProcessPaymentRequest": {
         "type": "object",
         "required": ["userId", "packageId"],
@@ -2615,6 +2714,10 @@
     {
       "name": "Training Programs",
       "description": "Training program management (coaches can create, users can view)"
+    },
+    {
+      "name": "Waiting Users",
+      "description": "Coach assignment queue — list and query user waiting status"
     },
     {
       "name": "Payments",

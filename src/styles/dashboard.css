@@ -366,6 +366,14 @@
   max-width: 280px;
 }
 
+.program-card-empty-sub {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  max-width: 280px;
+  line-height: 1.5;
+  margin-top: -4px;
+}
+
 .program-card-empty-cta {
   font-size: 0.85rem;
   color: var(--accent);

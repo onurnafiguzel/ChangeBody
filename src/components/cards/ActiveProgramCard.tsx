@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { ActiveProgramDetailDto } from '../../types/api.types'
-import { getUserActiveProgram } from '../../services/users'
+import { getUserActiveProgram, getWaitingUserStatus } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import '../../styles/dashboard.css'
 
@@ -19,6 +19,7 @@ function calcProgress(program: ActiveProgramDetailDto): number {
 
 export default function ActiveProgramCard() {
   const [program, setProgram] = useState<ActiveProgramDetailDto | null>(null)
+  const [isWaiting, setIsWaiting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -28,9 +29,11 @@ export default function ActiveProgramCard() {
     if (!user?.userId) return
     getUserActiveProgram(user.userId)
       .then(setProgram)
-      .catch((err) => {
+      .catch(async (err) => {
         if (err?.response?.status === 404) {
           setProgram(null)
+          const status = await getWaitingUserStatus(user.userId).catch(() => null)
+          setIsWaiting(status?.isWaitingForAssignment === true)
         } else {
           setError('Program bilgisi yüklenemedi.')
         }
@@ -49,13 +52,25 @@ export default function ActiveProgramCard() {
   if (!program) return (
     <div className="program-card">
       <div className="program-card-empty">
-        <span className="program-card-empty-icon">🏋️</span>
-        <p className="program-card-empty-text">
-          Henüz aktif bir antrenman programın yok.
-        </p>
-        <button className="program-card-empty-cta" onClick={() => navigate('/packages')}>
-          Paket satın al ve başla →
-        </button>
+        {isWaiting ? (
+          <>
+            <span className="program-card-empty-icon">⏳</span>
+            <p className="program-card-empty-text">Ödemeniz başarıyla alındı!</p>
+            <p className="program-card-empty-sub">
+              Koçunuz en kısa sürede size özel bir antrenman programı hazırlayacak.
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="program-card-empty-icon">🏋️</span>
+            <p className="program-card-empty-text">
+              Henüz aktif bir antrenman programın yok.
+            </p>
+            <button className="program-card-empty-cta" onClick={() => navigate('/packages')}>
+              Paket satın al ve başla →
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

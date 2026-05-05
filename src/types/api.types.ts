@@ -268,6 +268,7 @@ export interface ActiveProgramDetailDto {
 export interface ProcessPaymentRequest {
   userId: string; // UUID, required
   packageId: string; // UUID, required
+  amount: number; // decimal, required
   description?: string; // nullable
 }
 
@@ -287,6 +288,15 @@ export interface PaymentDto {
   description?: string; // nullable
   createdAt: string; // date-time
   updatedAt?: string; // date-time, nullable
+}
+
+// ============================================================================
+// WAITING USER TYPES
+// ============================================================================
+
+export interface WaitingUserStatusDto {
+  isWaitingForAssignment: boolean;
+  createdAt: string; // date-time
 }
 
 // ============================================================================
@@ -455,6 +465,9 @@ export const API_ENDPOINTS = {
   // Payments
   PAYMENTS_PROCESS: "/api/payments",
   PAYMENT_DETAIL: (paymentId: string) => `/api/payments?id=${paymentId}`,
+
+  // Waiting Users
+  WAITING_USER_STATUS: (userId: string) => `/api/waiting-users/${userId}`,
 };
 
 // ============================================================================
