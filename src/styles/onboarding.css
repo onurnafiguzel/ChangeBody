@@ -1,0 +1,453 @@
+/* ─── Onboarding Shell ─── */
+.onboarding-bg {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.onboarding-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 500px;
+}
+
+/* ─── Progress Steps ─── */
+.ob-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 32px;
+}
+
+.ob-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.ob-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.ob-step.active .ob-step-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.ob-step.done .ob-step-dot {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+
+.ob-step-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ob-step.active .ob-step-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ob-step.done .ob-step-label {
+  color: var(--success);
+}
+
+.ob-step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin-bottom: 20px;
+  transition: background 0.2s;
+}
+
+.ob-step-line.done {
+  background: var(--success);
+}
+
+/* ─── Step Header ─── */
+.ob-step-header {
+  margin-bottom: 24px;
+}
+
+.ob-step-icon {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.ob-step-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.ob-step-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Form Inputs ─── */
+.ob-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ob-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ob-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.ob-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ob-input,
+.ob-select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.ob-input::placeholder {
+  color: var(--text-dim);
+}
+
+.ob-input:focus,
+.ob-select:focus {
+  border-color: var(--accent);
+}
+
+.ob-input.error,
+.ob-select.error {
+  border-color: #ef4444;
+}
+
+.ob-select option {
+  background: var(--surface-2);
+}
+
+.ob-field-error {
+  font-size: 0.78rem;
+  color: #f87171;
+}
+
+/* ─── BMI Panel ─── */
+.bmi-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bmi-score {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  min-width: 70px;
+  text-align: center;
+}
+
+.bmi-score.underweight { color: #60a5fa; }
+.bmi-score.normal      { color: var(--success); }
+.bmi-score.overweight  { color: #facc15; }
+.bmi-score.obese       { color: #f87171; }
+
+.bmi-info {
+  flex: 1;
+}
+
+.bmi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.bmi-label.underweight { color: #60a5fa; }
+.bmi-label.normal      { color: var(--success); }
+.bmi-label.overweight  { color: #facc15; }
+.bmi-label.obese       { color: #f87171; }
+
+.bmi-range-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(to right, #60a5fa 0%, #60a5fa 18.5%, var(--success) 18.5%, var(--success) 25%, #facc15 25%, #facc15 30%, #f87171 30%);
+  margin-top: 6px;
+  position: relative;
+}
+
+.bmi-range-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  transition: left 0.3s;
+}
+
+/* ─── Goal Cards ─── */
+.ob-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ob-goal-card {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+}
+
+.ob-goal-card:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.ob-goal-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.ob-goal-card-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.ob-goal-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ob-goal-card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ─── Level Cards ─── */
+.ob-level-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ob-level-card {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ob-level-card:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.ob-level-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.ob-level-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ob-level-info {
+  flex: 1;
+}
+
+.ob-level-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ob-level-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.ob-level-bars {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ob-level-bar {
+  width: 6px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.ob-level-bar.filled {
+  background: var(--accent);
+}
+
+/* ─── Navigation ─── */
+.ob-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.ob-btn-next {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ob-btn-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ob-btn-next:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+.ob-btn-back {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ob-btn-back:hover {
+  border-color: var(--text-muted);
+}
+
+.global-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  color: #f87171;
+  margin-bottom: 20px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Skeleton Loader ─── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+  .onboarding-card {
+    padding: 24px 18px;
+  }
+  .ob-form-row {
+    grid-template-columns: 1fr;
+  }
+  .ob-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

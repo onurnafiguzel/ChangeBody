@@ -1,5 +1,5 @@
 import api from './api'
-import type { UserDto, CompleteProfileRequest, ActiveProgramDetailDto, WaitingUserStatusDto } from '../types/api.types'
+import type { UserDto, CompleteProfileRequest, ActiveProgramDetailDto, WaitingUserStatusDto, FitnessGoalDto } from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
 
 export async function getUserProfile(userId: string): Promise<UserDto> {
@@ -23,6 +23,22 @@ export async function getWaitingUserStatus(userId: string): Promise<WaitingUserS
   } catch (err: unknown) {
     const axiosErr = err as { response?: { status?: number } }
     if (axiosErr.response?.status === 404) return null
+    throw err
+  }
+}
+
+export async function getFitnessGoals(): Promise<FitnessGoalDto[]> {
+  const { data } = await api.get<FitnessGoalDto[]>(API_ENDPOINTS.FITNESS_GOALS_LIST)
+  return data
+}
+
+export async function getProfileCompletionStatus(userId: string): Promise<boolean> {
+  try {
+    const { data } = await api.get<boolean>(API_ENDPOINTS.PROFILE_COMPLETE_CHECK(userId))
+    return data
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { status?: number } }
+    if (axiosErr.response?.status === 404) return false
     throw err
   }
 }

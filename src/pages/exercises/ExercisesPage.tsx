@@ -35,7 +35,7 @@ export default function ExercisesPage() {
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     getMuscleGroups().then(setMuscleGroups).catch(() => {})
-  }, [user, navigate])
+  }, [user])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)

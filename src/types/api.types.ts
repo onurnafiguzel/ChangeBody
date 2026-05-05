@@ -45,7 +45,7 @@ export interface CompleteProfileRequest {
   height: number; // decimal (cm), required
   weight: number; // decimal (kg), required
   gender: "Male" | "Female" | "Other"; // required
-  fitnessGoal: string; // required (e.g., "Muscle Gain", "Fat Loss", "General Health")
+  fitnessGoalId: string; // UUID of selected fitness goal, required
   fitnessLevel: "Beginner" | "Intermediate" | "Advanced"; // required
 }
 
@@ -194,6 +194,29 @@ export interface ExerciseDto {
   isActive: boolean;
   createdAt: string; // date-time
   updatedAt?: string; // date-time, nullable
+}
+
+// ============================================================================
+// FITNESS GOAL TYPES
+// ============================================================================
+
+export interface FitnessGoalDto {
+  id: string; // UUID
+  name: string;
+  description?: string; // nullable
+  isActive: boolean;
+  createdAt: string; // date-time
+  updatedAt?: string; // date-time, nullable
+}
+
+export interface CreateFitnessGoalRequest {
+  name: string; // minLength: 1, maxLength: 200, required
+  description?: string; // nullable, maxLength: 1000
+}
+
+export interface UpdateFitnessGoalRequest {
+  name?: string;
+  description?: string;
 }
 
 // ============================================================================
@@ -447,6 +470,10 @@ export const API_ENDPOINTS = {
   EXERCISE_CREATE: "/api/exercises",
   EXERCISE_UPDATE: (exerciseId: string) => `/api/exercises/${exerciseId}`,
 
+  // Fitness Goals
+  FITNESS_GOALS_LIST: "/api/fitness-goals",
+  FITNESS_GOAL_DETAIL: (goalId: string) => `/api/fitness-goals/${goalId}`,
+
   // Packages
   PACKAGES_LIST: "/api/packages",
   PACKAGE_DETAIL: (packageId: string) => `/api/packages/${packageId}`,
@@ -468,6 +495,9 @@ export const API_ENDPOINTS = {
 
   // Waiting Users
   WAITING_USER_STATUS: (userId: string) => `/api/waiting-users/${userId}`,
+
+  // Profile Completion Check
+  PROFILE_COMPLETE_CHECK: (userId: string) => `/api/users/${userId}/profile-complete`,
 };
 
 // ============================================================================

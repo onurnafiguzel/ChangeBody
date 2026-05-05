@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import ActiveProgramCard from '../../components/cards/ActiveProgramCard'
+import ProfileCompletionPrompt from '../../components/cards/ProfileCompletionPrompt'
 import DashboardCard from '../../components/cards/DashboardCard'
 import { getStoredUser } from '../../services/auth'
 import '../../styles/dashboard.css'
@@ -46,6 +47,9 @@ export default function Dashboard() {
             <div className="welcome-banner-title">Merhaba, {firstName} 👋</div>
             <div className="welcome-banner-sub">{quote}</div>
           </div>
+
+          {/* Profile Completion Prompt */}
+          <ProfileCompletionPrompt />
 
           {/* Active Program */}
           <div className="section-header">
