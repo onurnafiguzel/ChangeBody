@@ -1,0 +1,17 @@
+import api from './api'
+import type { UserDto, CompleteProfileRequest, ActiveProgramDetailDto } from '../types/api.types'
+import { API_ENDPOINTS } from '../types/api.types'
+
+export async function getUserProfile(userId: string): Promise<UserDto> {
+  const { data } = await api.get<UserDto>(API_ENDPOINTS.USER_DETAIL(userId))
+  return data
+}
+
+export async function completeProfile(userId: string, payload: CompleteProfileRequest): Promise<void> {
+  await api.post(API_ENDPOINTS.USER_COMPLETE_PROFILE(userId), payload)
+}
+
+export async function getUserActiveProgram(userId: string): Promise<ActiveProgramDetailDto> {
+  const { data } = await api.get<ActiveProgramDetailDto>(API_ENDPOINTS.USER_ACTIVE_PROGRAM(userId))
+  return data
+}
