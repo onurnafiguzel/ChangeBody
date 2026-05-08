@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { CompleteProfileRequest, FitnessGoalDto } from '../../types/api.types'
-import { completeProfile, getFitnessGoals } from '../../services/users'
+import type { CompleteProfileRequest, FitnessGoalDto, UserDto } from '../../types/api.types'
+import { completeProfile, getFitnessGoals, getUserProfile } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import '../../styles/onboarding.css'
 
@@ -94,6 +94,27 @@ export default function ProfileCompletion() {
   const [goals, setGoals] = useState<FitnessGoalDto[]>([])
   const [goalsLoading, setGoalsLoading] = useState(true)
   const [goalsError, setGoalsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.userId) return
+      try {
+        const profile = await getUserProfile(user.userId)
+        setForm({
+          firstName: profile.firstName ?? '',
+          lastName: profile.lastName ?? '',
+          age: profile.age ?? undefined,
+          height: profile.height ?? undefined,
+          weight: profile.weight ?? undefined,
+          gender: profile.gender ?? undefined,
+          fitnessLevel: profile.fitnessLevel ?? undefined,
+        })
+      } catch {
+        // Fail silently - if no profile exists, form starts empty
+      }
+    }
+    loadProfile()
+  }, [user?.userId])
 
   useEffect(() => {
     async function loadGoals() {

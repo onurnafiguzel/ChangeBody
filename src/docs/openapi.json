@@ -1655,7 +1655,7 @@
         }
       }
     },
-        "/api/waiting-users": {
+    "/api/waiting-users": {
       "get": {
         "tags": ["Waiting Users"],
         "summary": "List all users waiting for coach assignment (Coach or Admin only)",
@@ -1995,7 +1995,7 @@
           },
           "fitnessGoal": {
             "type": "string",
-            "description": "Fitness goal (e.g., Weight Loss, Muscle Gain, Endurance)"
+            "description": "Fitness goal ID (UUID) to associate user with a fitness goal"
           },
           "fitnessLevel": {
             "type": "string",
@@ -2036,7 +2036,8 @@
             "enum": ["Male", "Female", "Other"]
           },
           "fitnessGoal": {
-            "type": "string"
+            "type": "string",
+            "description": "Fitness goal ID (UUID) to associate user with a fitness goal"
           },
           "fitnessLevel": {
             "type": "string",
@@ -2084,24 +2085,29 @@
           "height": {
             "type": "number",
             "format": "decimal",
-            "nullable": true
+            "nullable": true,
+            "description": "Height in cm"
           },
           "weight": {
             "type": "number",
             "format": "decimal",
-            "nullable": true
+            "nullable": true,
+            "description": "Weight in kg"
           },
           "gender": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "enum": ["Male", "Female", "Other"]
           },
           "fitnessGoal": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Fitness goal description (e.g., 'Lose weight and build endurance')"
           },
           "fitnessLevel": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "enum": ["Beginner", "Intermediate", "Advanced"]
           },
           "createdAt": {
             "type": "string",
@@ -2134,24 +2140,29 @@
           "height": {
             "type": "number",
             "format": "decimal",
-            "nullable": true
+            "nullable": true,
+            "description": "Height in cm"
           },
           "weight": {
             "type": "number",
             "format": "decimal",
-            "nullable": true
+            "nullable": true,
+            "description": "Weight in kg"
           },
           "gender": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "enum": ["Male", "Female", "Other"]
           },
           "fitnessGoal": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Fitness goal description"
           },
           "fitnessLevel": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "enum": ["Beginner", "Intermediate", "Advanced"]
           },
           "createdAt": {
             "type": "string",
