@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -7,6 +7,7 @@ import ProfileCompletion from './pages/onboarding/ProfileCompletion'
 import ExercisesPage from './pages/exercises/ExercisesPage'
 import PackagesPage from './pages/packages/PackagesPage'
 import { getStoredUser } from './services/auth'
+import { getProfileCompletionStatus } from './services/users'
 
 function AuthGate() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
@@ -21,6 +22,28 @@ function AuthGate() {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!getStoredUser()) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+function ProfileGuard({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<'loading' | 'complete' | 'incomplete'>('loading')
+  const user = getStoredUser()
+
+  useEffect(() => {
+    if (!user?.userId) return
+    getProfileCompletionStatus(user.userId)
+      .then((done) => setStatus(done ? 'complete' : 'incomplete'))
+      .catch(() => setStatus('complete'))
+  }, [user?.userId])
+
+  if (status === 'loading') {
+    return (
+      <div className="page-loading">
+        <span className="loading-spinner" />
+      </div>
+    )
+  }
+  if (status === 'incomplete') return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
@@ -42,7 +65,9 @@ export default function App() {
           path="/dashboard"
           element={
             <RequireAuth>
-              <Dashboard />
+              <ProfileGuard>
+                <Dashboard />
+              </ProfileGuard>
             </RequireAuth>
           }
         />
@@ -50,7 +75,9 @@ export default function App() {
           path="/exercises"
           element={
             <RequireAuth>
-              <ExercisesPage />
+              <ProfileGuard>
+                <ExercisesPage />
+              </ProfileGuard>
             </RequireAuth>
           }
         />
@@ -58,7 +85,9 @@ export default function App() {
           path="/packages"
           element={
             <RequireAuth>
-              <PackagesPage />
+              <ProfileGuard>
+                <PackagesPage />
+              </ProfileGuard>
             </RequireAuth>
           }
         />

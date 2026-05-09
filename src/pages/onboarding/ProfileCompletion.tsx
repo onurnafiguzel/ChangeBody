@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CompleteProfileRequest, FitnessGoalDto, UserDto } from '../../types/api.types'
-import { completeProfile, getFitnessGoals, getUserProfile } from '../../services/users'
+import { completeProfile, getFitnessGoals, getProfileCompletionStatus, getUserProfile } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import '../../styles/onboarding.css'
 
@@ -94,6 +94,15 @@ export default function ProfileCompletion() {
   const [goals, setGoals] = useState<FitnessGoalDto[]>([])
   const [goalsLoading, setGoalsLoading] = useState(true)
   const [goalsError, setGoalsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user?.userId) return
+    getProfileCompletionStatus(user.userId)
+      .then((done) => {
+        if (done) navigate('/dashboard', { replace: true })
+      })
+      .catch(() => {})
+  }, [user?.userId, navigate])
 
   useEffect(() => {
     async function loadProfile() {
