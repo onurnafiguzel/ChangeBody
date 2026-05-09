@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserProfile } from '../../services/users'
+import { getProfileCompletionStatus, getUserProfile } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import type { UserDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
@@ -21,14 +21,19 @@ export default function ProfileSummary() {
   const navigate = useNavigate()
   const user = getStoredUser()
   const [profile, setProfile] = useState<UserDto | null>(null)
+  const [isComplete, setIsComplete] = useState<boolean>(true)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadProfile() {
       if (!user?.userId) return
       try {
-        const data = await getUserProfile(user.userId)
+        const [data, completed] = await Promise.all([
+          getUserProfile(user.userId),
+          getProfileCompletionStatus(user.userId),
+        ])
         setProfile(data)
+        setIsComplete(completed)
       } catch {
         // Fail silently
       } finally {
@@ -48,8 +53,6 @@ export default function ProfileSummary() {
 
   if (!profile) return null
 
-  const isComplete = profile.firstName && profile.lastName && profile.age && profile.height &&
-                     profile.weight && profile.gender && profile.fitnessLevel && profile.fitnessGoal
   const bmi = profile.height && profile.weight
     ? Math.round((profile.weight / ((profile.height / 100) ** 2)) * 10) / 10
     : null

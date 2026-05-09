@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { CompleteProfileRequest, FitnessGoalDto, UserDto } from '../../types/api.types'
-import { completeProfile, getFitnessGoals, getProfileCompletionStatus, getUserProfile } from '../../services/users'
+import type { CompleteProfileRequest, FitnessGoalDto } from '../../types/api.types'
+import { completeProfile, getFitnessGoals, getUserProfile } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import '../../styles/onboarding.css'
 
@@ -75,7 +75,7 @@ function validateStep2(f: Partial<CompleteProfileRequest>): FormErrors {
 
 function validateStep3(f: Partial<CompleteProfileRequest>): FormErrors {
   const e: FormErrors = {}
-  if (!f.fitnessGoalId)  e.fitnessGoalId  = 'Bir hedef seçiniz.'
+  if (!f.fitnessGoal)  e.fitnessGoal  = 'Bir hedef seçiniz.'
   if (!f.fitnessLevel) e.fitnessLevel = 'Bir seviye seçiniz.'
   return e
 }
@@ -94,15 +94,6 @@ export default function ProfileCompletion() {
   const [goals, setGoals] = useState<FitnessGoalDto[]>([])
   const [goalsLoading, setGoalsLoading] = useState(true)
   const [goalsError, setGoalsError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!user?.userId) return
-    getProfileCompletionStatus(user.userId)
-      .then((done) => {
-        if (done) navigate('/dashboard', { replace: true })
-      })
-      .catch(() => {})
-  }, [user?.userId, navigate])
 
   useEffect(() => {
     async function loadProfile() {
@@ -351,12 +342,12 @@ export default function ProfileCompletion() {
                 Hedef seçenekleri yüklenemedi
               </div>
             ) : (
-              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoalId ? 4 : 20 }}>
+              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoal ? 4 : 20 }}>
                 {goals.map((g) => (
                   <div
                     key={g.id}
-                    className={`ob-goal-card ${form.fitnessGoalId === g.id ? 'selected' : ''}`}
-                    onClick={() => set('fitnessGoalId', g.id as any)}
+                    className={`ob-goal-card ${form.fitnessGoal === g.id ? 'selected' : ''}`}
+                    onClick={() => set('fitnessGoal', g.id)}
                   >
                     <span className="ob-goal-card-icon">{getGoalIcon(g.name)}</span>
                     <span className="ob-goal-card-name">{g.name}</span>
@@ -365,7 +356,7 @@ export default function ProfileCompletion() {
                 ))}
               </div>
             )}
-            {errors.fitnessGoalId && <span className="ob-field-error" style={{ display: 'block', marginBottom: 12 }}>{errors.fitnessGoalId}</span>}
+            {errors.fitnessGoal && <span className="ob-field-error" style={{ display: 'block', marginBottom: 12 }}>{errors.fitnessGoal}</span>}
 
             <div className="ob-label" style={{ marginBottom: 8 }}>Fitness Seviyesi</div>
             <div className="ob-level-cards">

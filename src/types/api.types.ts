@@ -45,7 +45,7 @@ export interface CompleteProfileRequest {
   height: number; // decimal (cm), required
   weight: number; // decimal (kg), required
   gender: "Male" | "Female" | "Other"; // required
-  fitnessGoalId: string; // UUID of selected fitness goal, required
+  fitnessGoal: string; // UUID of selected fitness goal, required (BE contract: openapi.json)
   fitnessLevel: "Beginner" | "Intermediate" | "Advanced"; // required
 }
 
