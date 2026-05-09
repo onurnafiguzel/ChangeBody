@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { signup } from '../services/auth'
-import { parseApiError, parseFieldErrors } from '../utils/errorHandler'
+import { breakdownApiError, parseApiError } from '../utils/errorHandler'
 import '../styles/auth.css'
 
 interface Props {
@@ -43,12 +43,9 @@ export default function SignupPage({ onSwitchToLogin }: Props) {
       if (status === 409) {
         setFieldErrors({ email: 'Bu e-posta adresi zaten kayıtlı.' })
       } else if (status === 400) {
-        const fieldMap = parseFieldErrors(err)
-        if (Object.keys(fieldMap).length > 0) {
-          setFieldErrors(fieldMap)
-        } else {
-          setError(parseApiError(err, 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.'))
-        }
+        const { fieldErrors: fields, globalMessage } = breakdownApiError(err)
+        setFieldErrors(fields)
+        if (globalMessage) setError(globalMessage)
       } else {
         setError(parseApiError(err, 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.'))
       }

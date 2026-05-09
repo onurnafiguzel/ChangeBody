@@ -70,7 +70,7 @@ export default function ProfileSummary() {
           </div>
           <button
             className="profile-completion-btn"
-            onClick={() => navigate('/onboarding')}
+            onClick={() => navigate('/profile/edit')}
           >
             Tamamla →
           </button>
@@ -81,7 +81,7 @@ export default function ProfileSummary() {
         <div className="profile-summary-title">Bilgilerim</div>
         <button
           className="profile-summary-edit"
-          onClick={() => navigate('/onboarding')}
+          onClick={() => navigate('/profile/edit')}
           title="Profili Düzenle"
         >
           ✏️

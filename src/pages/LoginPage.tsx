@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { login } from '../services/auth'
-import { parseApiError, parseFieldErrors } from '../utils/errorHandler'
+import { breakdownApiError, parseApiError } from '../utils/errorHandler'
 import '../styles/auth.css'
 
 interface Props {
@@ -38,12 +38,9 @@ export default function LoginPage({ onSwitchToSignup }: Props) {
       if (status === 401) {
         setError('E-posta veya şifre hatalı. Tekrar deneyin.')
       } else if (status === 400) {
-        const fieldMap = parseFieldErrors(err)
-        if (Object.keys(fieldMap).length > 0) {
-          setFieldErrors(fieldMap)
-        } else {
-          setError(parseApiError(err))
-        }
+        const { fieldErrors: fields, globalMessage } = breakdownApiError(err)
+        setFieldErrors(fields)
+        if (globalMessage) setError(globalMessage)
       } else {
         setError(parseApiError(err))
       }

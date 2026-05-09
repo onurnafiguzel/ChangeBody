@@ -8,6 +8,7 @@ import ExercisesPage from './pages/exercises/ExercisesPage'
 import PackagesPage from './pages/packages/PackagesPage'
 import ProgramsPage from './pages/programs/ProgramsPage'
 import ProfilePage from './pages/profile/ProfilePage'
+import ProfileEditPage from './pages/profile/ProfileEditPage'
 import { getStoredUser } from './services/auth'
 import { getProfileCompletionStatus } from './services/users'
 
@@ -109,6 +110,16 @@ export default function App() {
             <RequireAuth>
               <ProfileGuard>
                 <ProfilePage />
+              </ProfileGuard>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <RequireAuth>
+              <ProfileGuard>
+                <ProfileEditPage />
               </ProfileGuard>
             </RequireAuth>
           }

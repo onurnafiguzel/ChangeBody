@@ -49,6 +49,18 @@ export interface CompleteProfileRequest {
   fitnessLevel: "Beginner" | "Intermediate" | "Advanced"; // required
 }
 
+// PUT /api/users/{id} — tüm alanlar opsiyonel (diff güncelleme)
+export interface UpdateUserRequest {
+  firstName?: string;  // minLength: 1
+  lastName?: string;   // minLength: 1
+  age?: number;        // 13-120
+  height?: number;     // decimal (cm), > 0
+  weight?: number;     // decimal (kg), > 0
+  gender?: "Male" | "Female" | "Other";
+  fitnessGoal?: string; // FitnessGoalDto.id (UUID)
+  fitnessLevel?: "Beginner" | "Intermediate" | "Advanced";
+}
+
 export interface UserDto {
   id: string; // UUID
   email: string; // format: email

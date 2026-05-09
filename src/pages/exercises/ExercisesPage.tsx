@@ -32,10 +32,12 @@ export default function ExercisesPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Mount'ta TEK istek — user her render'da yeni object literal döndüğü için [user] dep'i sonsuz tekrara yol açıyordu.
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     getMuscleGroups().then(setMuscleGroups).catch(() => {})
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Tek useEffect: page veya filter değişince debounce'lu fetch (mount dahil yalnızca 1 istek).
   useEffect(() => {
