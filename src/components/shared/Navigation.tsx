@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { path: '/exercises', icon: '💪', label: 'Egzersizler' },
   { path: '/packages', icon: '📦', label: 'Paketler' },
   { path: '/programs', icon: '📋', label: 'Program' },
+  { path: '/profile', icon: '👤', label: 'Profil' },
 ]
 
 export function Sidebar() {

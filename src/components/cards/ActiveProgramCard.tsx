@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { ActiveProgramDetailDto } from '../../types/api.types'
 import { getUserActiveProgram, getWaitingUserStatus } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
+import { parseApiError } from '../../utils/errorHandler'
 import '../../styles/dashboard.css'
 
 function formatDate(dateStr?: string) {
@@ -25,27 +26,39 @@ export default function ActiveProgramCard() {
   const navigate = useNavigate()
   const user = getStoredUser()
 
-  useEffect(() => {
+  const fetchProgram = useCallback(async () => {
     if (!user?.userId) return
-    getUserActiveProgram(user.userId)
-      .then(setProgram)
-      .catch(async (err) => {
-        if (err?.response?.status === 404) {
-          setProgram(null)
-          const status = await getWaitingUserStatus(user.userId).catch(() => null)
-          setIsWaiting(status?.isWaitingForAssignment === true)
-        } else {
-          setError('Program bilgisi yüklenemedi.')
-        }
-      })
-      .finally(() => setLoading(false))
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getUserActiveProgram(user.userId)
+      setProgram(data)
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } }
+      if (axiosErr?.response?.status === 404) {
+        setProgram(null)
+        const status = await getWaitingUserStatus(user.userId).catch(() => null)
+        setIsWaiting(status?.isWaitingForAssignment === true)
+      } else {
+        setError(parseApiError(err, 'Program bilgisi yüklenemedi.'))
+      }
+    } finally {
+      setLoading(false)
+    }
   }, [user?.userId])
+
+  useEffect(() => {
+    fetchProgram()
+  }, [fetchProgram])
 
   if (loading) return <div className="skeleton skeleton-card" />
 
   if (error) return (
     <div className="program-card">
       <div className="error-banner">⚠️ {error}</div>
+      <button className="btn-retry" onClick={fetchProgram}>
+        Tekrar Dene
+      </button>
     </div>
   )
 

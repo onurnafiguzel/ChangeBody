@@ -37,18 +37,15 @@ export default function ExercisesPage() {
     getMuscleGroups().then(setMuscleGroups).catch(() => {})
   }, [user])
 
+  // Tek useEffect: page veya filter değişince debounce'lu fetch (mount dahil yalnızca 1 istek).
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      fetchExercises(1)
-      setPage(1)
+      fetchExercises(page)
     }, filters.search ? 400 : 0)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [filters.search, filters.muscleGroup, filters.difficultyLevel])
-
-  useEffect(() => {
-    fetchExercises(page)
-  }, [page])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filters.search, filters.muscleGroup, filters.difficultyLevel])
 
   async function fetchExercises(p: number) {
     setLoading(true)
@@ -73,6 +70,7 @@ export default function ExercisesPage() {
 
   function handleFilterChange(f: FilterState) {
     setFilters(f)
+    setPage(1) // Filter değişince ilk sayfaya dön (page === 1 ise React state set'i no-op'tur, ekstra istek yok)
   }
 
   if (!user) return null

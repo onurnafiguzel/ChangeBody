@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
-import ActiveProgramCard from '../../components/cards/ActiveProgramCard'
 import ProfileSummary from '../../components/cards/ProfileSummary'
 import DashboardCard from '../../components/cards/DashboardCard'
 import { getStoredUser } from '../../services/auth'
@@ -53,12 +52,6 @@ export default function Dashboard() {
             <span className="section-title">Bilgilerim</span>
           </div>
           <ProfileSummary />
-
-          {/* Active Program */}
-          <div className="section-header">
-            <span className="section-title">Aktif Program</span>
-          </div>
-          <ActiveProgramCard />
 
           {/* Quick Access */}
           <div className="section-header">
