@@ -4,7 +4,7 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import PackageCard from '../../components/cards/PackageCard'
 import { getPackages } from '../../services/packages'
-import { processPayment } from '../../services/payments'
+import { processPayment, PaymentError } from '../../services/payments'
 import { getWaitingUserStatus } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import type { PackageDto } from '../../types/api.types'
@@ -73,9 +73,29 @@ export default function PackagesPage() {
         setSelected(null)
         navigate('/dashboard')
       }, 2000)
-    } catch {
+    } catch (err) {
       setPaymentState('error')
-      setPaymentError('Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.')
+      if (err instanceof PaymentError) {
+        switch (err.kind) {
+          case 'unauthorized':
+            setPaymentError('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.')
+            setTimeout(() => navigate('/login'), 1500)
+            break
+          case 'validation':
+            setPaymentError(err.detail ?? 'Geçersiz istek. Bilgilerinizi kontrol edin.')
+            break
+          case 'conflict':
+            setPaymentError('Sistem yoğun. Lütfen birkaç dakika sonra tekrar deneyin.')
+            break
+          case 'network':
+            setPaymentError('Bağlantı hatası. İnternetinizi kontrol edip tekrar deneyin.')
+            break
+          default:
+            setPaymentError('Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.')
+        }
+      } else {
+        setPaymentError('Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.')
+      }
     }
   }
 

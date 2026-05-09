@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { CompleteProfileRequest, FitnessGoalDto } from '../../types/api.types'
 import { completeProfile, getFitnessGoals, getUserProfile } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
+import { parseApiError } from '../../utils/errorHandler'
 import '../../styles/onboarding.css'
 
 // ─── Icon Mapping ───────────────────────────────────────────────────────────
@@ -161,11 +162,11 @@ export default function ProfileCompletion() {
       await completeProfile(user.userId, form as CompleteProfileRequest)
       navigate('/dashboard')
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { status: number; data?: { detail?: string } } }
+      const axiosErr = err as { response?: { status: number } }
       if (axiosErr?.response?.status === 401) {
         navigate('/login')
       } else {
-        setGlobalError(axiosErr?.response?.data?.detail ?? 'Bir hata oluştu. Lütfen tekrar deneyin.')
+        setGlobalError(parseApiError(err))
       }
     } finally {
       setLoading(false)

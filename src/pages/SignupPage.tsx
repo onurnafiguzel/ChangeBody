@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { signup } from '../services/auth'
-import type { ApiError } from '../types/auth'
+import { parseApiError, parseFieldErrors } from '../utils/errorHandler'
 import '../styles/auth.css'
 
 interface Props {
@@ -38,21 +38,19 @@ export default function SignupPage({ onSwitchToLogin }: Props) {
       await signup({ email: email.trim(), password })
       navigate('/dashboard')
     } catch (err) {
-      const axiosErr = err as AxiosError<ApiError>
-      const status = axiosErr.response?.status
-      const detail = axiosErr.response?.data?.detail
+      const status = (err as AxiosError).response?.status
 
       if (status === 409) {
         setFieldErrors({ email: 'Bu e-posta adresi zaten kayıtlı.' })
-      } else if (status === 400 && axiosErr.response?.data?.errors) {
-        const apiErrors = axiosErr.response.data.errors
-        const mapped: Record<string, string> = {}
-        for (const [key, msgs] of Object.entries(apiErrors)) {
-          mapped[key.toLowerCase()] = msgs[0]
+      } else if (status === 400) {
+        const fieldMap = parseFieldErrors(err)
+        if (Object.keys(fieldMap).length > 0) {
+          setFieldErrors(fieldMap)
+        } else {
+          setError(parseApiError(err, 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.'))
         }
-        setFieldErrors(mapped)
       } else {
-        setError(detail || 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.')
+        setError(parseApiError(err, 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.'))
       }
     } finally {
       setLoading(false)

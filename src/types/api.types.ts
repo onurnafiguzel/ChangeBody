@@ -291,7 +291,7 @@ export interface ActiveProgramDetailDto {
 export interface ProcessPaymentRequest {
   userId: string; // UUID, required
   packageId: string; // UUID, required
-  amount: number; // decimal, required
+  amount: number; // decimal, > 0, required (BE validasyonu: "Ödeme tutarı sıfırdan büyük olmalıdır")
   description?: string; // nullable
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { login } from '../services/auth'
-import type { ApiError } from '../types/auth'
+import { parseApiError, parseFieldErrors } from '../utils/errorHandler'
 import '../styles/auth.css'
 
 interface Props {
@@ -33,21 +33,19 @@ export default function LoginPage({ onSwitchToSignup }: Props) {
       await login({ email: email.trim(), password })
       navigate('/dashboard')
     } catch (err) {
-      const axiosErr = err as AxiosError<ApiError>
-      const status = axiosErr.response?.status
-      const detail = axiosErr.response?.data?.detail
+      const status = (err as AxiosError).response?.status
 
       if (status === 401) {
         setError('E-posta veya şifre hatalı. Tekrar deneyin.')
-      } else if (status === 400 && axiosErr.response?.data?.errors) {
-        const apiErrors = axiosErr.response.data.errors
-        const mapped: Record<string, string> = {}
-        for (const [key, msgs] of Object.entries(apiErrors)) {
-          mapped[key.toLowerCase()] = msgs[0]
+      } else if (status === 400) {
+        const fieldMap = parseFieldErrors(err)
+        if (Object.keys(fieldMap).length > 0) {
+          setFieldErrors(fieldMap)
+        } else {
+          setError(parseApiError(err))
         }
-        setFieldErrors(mapped)
       } else {
-        setError(detail || 'Bir hata oluştu. Lütfen tekrar deneyin.')
+        setError(parseApiError(err))
       }
     } finally {
       setLoading(false)
