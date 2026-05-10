@@ -125,6 +125,26 @@ export interface CoachDto {
   updatedAt?: string; // date-time, nullable
 }
 
+// GET /api/coaches/{coachId}/programs response item
+export interface CoachProgramListItemDto {
+  id: string; // UUID
+  name: string;
+  description?: string | null;
+  durationWeeks: number;
+  completedWeeks: number;
+  progressPercentage: number; // 0-100, BE-calculated
+  difficulty?: "Beginner" | "Intermediate" | "Advanced" | null;
+  startDate?: string | null; // date-time
+  endDate?: string | null; // date-time
+  createdAt: string; // date-time
+  isCompleted: boolean;
+  userId: string; // assigned user UUID
+  userAge?: number | null;
+  userHeight?: number | null; // cm
+  userWeight?: number | null; // kg
+  userGender?: "Male" | "Female" | "Other" | null;
+}
+
 // ============================================================================
 // PACKAGE TYPES
 // ============================================================================
@@ -475,6 +495,7 @@ export const API_ENDPOINTS = {
   COACH_CREATE: "/api/coaches",
   COACH_UPDATE: (coachId: string) => `/api/coaches/${coachId}`,
   COACH_CHANGE_PASSWORD: (coachId: string) => `/api/coaches/${coachId}/change-password`,
+  COACH_PROGRAMS_LIST: (coachId: string) => `/api/coaches/${coachId}/programs`,
 
   // Exercises
   EXERCISES_LIST: "/api/exercises",
@@ -506,6 +527,7 @@ export const API_ENDPOINTS = {
   PAYMENT_DETAIL: (paymentId: string) => `/api/payments?id=${paymentId}`,
 
   // Waiting Users
+  WAITING_USERS_LIST: "/api/waiting-users",
   WAITING_USER_STATUS: (userId: string) => `/api/waiting-users/${userId}`,
 
   // Profile Completion Check

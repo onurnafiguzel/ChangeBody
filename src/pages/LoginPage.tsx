@@ -30,8 +30,8 @@ export default function LoginPage({ onSwitchToSignup }: Props) {
 
     setLoading(true)
     try {
-      await login({ email: email.trim(), password })
-      navigate('/dashboard')
+      const auth = await login({ email: email.trim(), password })
+      navigate(auth.role === 'Coach' ? '/coach/dashboard' : '/dashboard')
     } catch (err) {
       const status = (err as AxiosError).response?.status
 

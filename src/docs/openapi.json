@@ -734,6 +734,44 @@
         }
       }
     },
+    "/api/coaches/{coachId}/programs": {
+      "get": {
+        "tags": ["Coaches"],
+        "summary": "List active training programs of a coach (Admin or owning Coach)",
+        "description": "Returns all active training programs where CoachId matches and IsActive=true, joined with assigned user fitness profile (age, height, weight, gender). Admin can query any coachId; Coach can query only their own.",
+        "operationId": "GetCoachPrograms",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "coachId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Programs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CoachProgramListItemDto" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — JWT token required",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "403": {
+            "description": "Forbidden — Coach can only view own programs; User role cannot access",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    },
     "/api/coaches/{id}/change-password": {
       "post": {
         "tags": ["Coaches"],
@@ -2574,6 +2612,27 @@
               }
             }
           }
+        }
+      },
+      "CoachProgramListItemDto": {
+        "type": "object",
+        "properties": {
+          "id":                 { "type": "string", "format": "uuid" },
+          "name":               { "type": "string" },
+          "description":        { "type": "string", "nullable": true },
+          "durationWeeks":      { "type": "integer", "format": "int32" },
+          "completedWeeks":     { "type": "integer", "format": "int32" },
+          "progressPercentage": { "type": "number", "format": "double" },
+          "difficulty":         { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced"], "nullable": true },
+          "startDate":          { "type": "string", "format": "date-time", "nullable": true },
+          "endDate":            { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt":          { "type": "string", "format": "date-time" },
+          "isCompleted":        { "type": "boolean" },
+          "userId":             { "type": "string", "format": "uuid" },
+          "userAge":            { "type": "integer", "format": "int32", "nullable": true },
+          "userHeight":         { "type": "number", "format": "decimal", "nullable": true, "description": "User height in cm" },
+          "userWeight":         { "type": "number", "format": "decimal", "nullable": true, "description": "User weight in kg" },
+          "userGender":         { "type": "string", "enum": ["Male", "Female", "Other"], "nullable": true }
         }
       },
       "ProgramExerciseDetail": {

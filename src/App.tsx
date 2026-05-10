@@ -9,13 +9,30 @@ import PackagesPage from './pages/packages/PackagesPage'
 import ProgramsPage from './pages/programs/ProgramsPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditPage from './pages/profile/ProfileEditPage'
+import CoachDashboard from './pages/coach/CoachDashboard'
+import WaitingUsersPage from './pages/coach/WaitingUsersPage'
+import UserDetailForCoach from './pages/coach/UserDetailForCoach'
+import MyProgramsPage from './pages/coach/MyProgramsPage'
+import ProgramDetailPage from './pages/coach/ProgramDetailPage'
+import CoachProfilePage from './pages/coach/CoachProfilePage'
+import CoachProfileEditPage from './pages/coach/CoachProfileEditPage'
+import AccessDenied from './pages/AccessDenied'
 import { getStoredUser } from './services/auth'
 import { getProfileCompletionStatus } from './services/users'
 
+type Role = 'User' | 'Coach' | 'Admin'
+
+function homeForRole(role?: Role): string {
+  if (role === 'Coach') return '/coach/dashboard'
+  if (role === 'Admin') return '/admin/dashboard' // future
+  return '/dashboard'
+}
+
 function AuthGate() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const user = getStoredUser()
 
-  if (getStoredUser()) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to={homeForRole(user.role)} replace />
 
   if (mode === 'login') {
     return <LoginPage onSwitchToSignup={() => setMode('signup')} />
@@ -23,8 +40,10 @@ function AuthGate() {
   return <SignupPage onSwitchToLogin={() => setMode('login')} />
 }
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  if (!getStoredUser()) return <Navigate to="/login" replace />
+function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
+  const user = getStoredUser()
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role !== role) return <Navigate to="/access-denied" replace />
   return <>{children}</>
 }
 
@@ -33,11 +52,15 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   const user = getStoredUser()
 
   useEffect(() => {
-    if (!user?.userId) return
+    // Sadece User rolü için profile-complete kontrolü yap; Coach/Admin'in fitness profili yok.
+    if (!user?.userId || user.role !== 'User') {
+      setStatus('complete')
+      return
+    }
     getProfileCompletionStatus(user.userId)
       .then((done) => setStatus(done ? 'complete' : 'incomplete'))
       .catch(() => setStatus('complete'))
-  }, [user?.userId])
+  }, [user?.userId, user?.role])
 
   if (status === 'loading') {
     return (
@@ -56,74 +79,110 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<AuthGate />} />
         <Route path="/signup" element={<AuthGate />} />
+        <Route path="/access-denied" element={<AccessDenied />} />
+
+        {/* User onboarding (User-only) */}
         <Route
           path="/onboarding"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileCompletion />
-            </RequireAuth>
+            </RequireRole>
           }
         />
+
+        {/* User-only routes */}
         <Route
           path="/dashboard"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <Dashboard />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
         <Route
           path="/exercises"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <ExercisesPage />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
         <Route
           path="/packages"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <PackagesPage />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
         <Route
           path="/programs"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <ProgramsPage />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
         <Route
           path="/profile"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <ProfilePage />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
         <Route
           path="/profile/edit"
           element={
-            <RequireAuth>
+            <RequireRole role="User">
               <ProfileGuard>
                 <ProfileEditPage />
               </ProfileGuard>
-            </RequireAuth>
+            </RequireRole>
           }
         />
+
+        {/* Coach-only routes */}
+        <Route
+          path="/coach/dashboard"
+          element={<RequireRole role="Coach"><CoachDashboard /></RequireRole>}
+        />
+        <Route
+          path="/coach/waiting-users"
+          element={<RequireRole role="Coach"><WaitingUsersPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/users/:userId"
+          element={<RequireRole role="Coach"><UserDetailForCoach /></RequireRole>}
+        />
+        <Route
+          path="/coach/programs"
+          element={<RequireRole role="Coach"><MyProgramsPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/programs/:programId"
+          element={<RequireRole role="Coach"><ProgramDetailPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/profile"
+          element={<RequireRole role="Coach"><CoachProfilePage /></RequireRole>}
+        />
+        <Route
+          path="/coach/profile/edit"
+          element={<RequireRole role="Coach"><CoachProfileEditPage /></RequireRole>}
+        />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
