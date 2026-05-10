@@ -309,11 +309,12 @@ export interface ActiveProgramDetailDto {
   difficulty: DifficultyLevel;
   status: "InProgress" | "Completed";
   dailyExercises?: Record<string, ProgramExerciseDetail[]>; // nullable
-  // Example:
-  // {
-  //   "Day-1": [...],
-  //   "Day-2": [...]
-  // }
+  // Atanan sporcu bilgileri (BE programa join'leyip döndürüyor)
+  userId?: string; // UUID
+  userAge?: number | null;
+  userHeight?: number | null; // cm
+  userWeight?: number | null; // kg
+  userGender?: "Male" | "Female" | "Other" | null;
 }
 
 // ============================================================================

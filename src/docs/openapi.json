@@ -2611,7 +2611,12 @@
                 "$ref": "#/components/schemas/ProgramExerciseDetail"
               }
             }
-          }
+                    },
+          "userId":     { "type": "string",  "format": "uuid" },
+          "userAge":    { "type": "integer", "format": "int32", "nullable": true },
+          "userHeight": { "type": "number",  "format": "decimal", "nullable": true, "description": "User height in cm" },
+          "userWeight": { "type": "number",  "format": "decimal", "nullable": true, "description": "User weight in kg" },
+          "userGender": { "type": "string",  "enum": ["Male", "Female", "Other"], "nullable": true }
         }
       },
       "CoachProgramListItemDto": {

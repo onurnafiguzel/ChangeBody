@@ -14,6 +14,7 @@ import type { ActiveProgramDetailDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
 
 const DIFFICULTY_TR: Record<string, string> = { Beginner: 'Başlangıç', Intermediate: 'Orta', Advanced: 'İleri' }
+const GENDER_TR: Record<string, string> = { Male: 'Erkek', Female: 'Kadın', Other: 'Diğer' }
 
 function formatDate(iso?: string): string {
   if (!iso) return '—'
@@ -185,6 +186,46 @@ export default function ProgramDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Atanan Sporcu (BE artık programın user fitness profilini de döndürüyor) */}
+          {(program.userId || program.userAge != null || program.userHeight != null || program.userWeight != null || program.userGender) && (
+            <div className="profile-edit-section">
+              <div className="profile-edit-section-title">👤 Atanan Sporcu</div>
+              <div className="profile-summary-grid">
+                {program.userAge != null && (
+                  <div className="profile-summary-item">
+                    <span className="profile-summary-label">Yaş</span>
+                    <span className="profile-summary-value">{program.userAge}</span>
+                  </div>
+                )}
+                {program.userGender && (
+                  <div className="profile-summary-item">
+                    <span className="profile-summary-label">Cinsiyet</span>
+                    <span className="profile-summary-value">{GENDER_TR[program.userGender] ?? program.userGender}</span>
+                  </div>
+                )}
+                {program.userHeight != null && (
+                  <div className="profile-summary-item">
+                    <span className="profile-summary-label">Boy</span>
+                    <span className="profile-summary-value">{program.userHeight} cm</span>
+                  </div>
+                )}
+                {program.userWeight != null && (
+                  <div className="profile-summary-item">
+                    <span className="profile-summary-label">Kilo</span>
+                    <span className="profile-summary-value">{program.userWeight} kg</span>
+                  </div>
+                )}
+                {program.userId && (
+                  <div className="profile-summary-item full">
+                    <button className="btn-link" onClick={() => navigate(`/coach/users/${program.userId}`)}>
+                      Sporcu Profilini Gör →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Daily Schedule (read-only) */}
           <div className="profile-edit-section">
