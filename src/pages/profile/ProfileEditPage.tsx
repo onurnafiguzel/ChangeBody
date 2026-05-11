@@ -5,6 +5,7 @@ import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { changePassword, getFitnessGoals, getUserProfile, updateUser } from '../../services/users'
 import { getStoredUser } from '../../services/auth'
 import { breakdownApiError, parseApiError } from '../../utils/errorHandler'
+import { useToast } from '../../components/shared/Toast'
 import type { FitnessGoalDto, UpdateUserRequest, UserDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
 import '../../styles/onboarding.css'
@@ -21,6 +22,7 @@ type PasswordErrors = Partial<Record<keyof PasswordForm, string>>
 
 export default function ProfileEditPage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const user = getStoredUser()
 
   // ─── Profile state ──────────────────────────────────────────────────────
@@ -28,7 +30,6 @@ export default function ProfileEditPage() {
   const [form, setForm] = useState<ProfileForm>({})
   const [errors, setErrors] = useState<ProfileErrors>({})
   const [globalError, setGlobalError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
@@ -40,7 +41,6 @@ export default function ProfileEditPage() {
   const [pwForm, setPwForm] = useState<PasswordForm>({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [pwErrors, setPwErrors] = useState<PasswordErrors>({})
   const [pwGlobal, setPwGlobal] = useState<string | null>(null)
-  const [pwSuccess, setPwSuccess] = useState<string | null>(null)
   const [pwLoading, setPwLoading] = useState(false)
 
   // ─── Mount: profil + hedefler ───────────────────────────────────────────
@@ -112,7 +112,6 @@ export default function ProfileEditPage() {
   // ─── Submit profile ─────────────────────────────────────────────────────
   async function handleSaveProfile() {
     if (!user?.userId || !original) return
-    setSuccessMessage(null)
     setGlobalError(null)
 
     const payload = buildPayload()
@@ -126,8 +125,8 @@ export default function ProfileEditPage() {
     setLoading(true)
     try {
       await updateUser(user.userId, payload)
-      setSuccessMessage('Profil güncellendi.')
-      setTimeout(() => navigate('/profile'), 1500)
+      toast.success('Profil güncellendi.')
+      setTimeout(() => navigate('/profile'), 1000)
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 401) { navigate('/login'); return }
@@ -156,7 +155,6 @@ export default function ProfileEditPage() {
 
   async function handleChangePassword() {
     if (!user?.userId) return
-    setPwSuccess(null)
     setPwGlobal(null)
 
     const validation = validatePassword()
@@ -171,9 +169,9 @@ export default function ProfileEditPage() {
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
       })
-      setPwSuccess('Şifreniz güncellendi.')
+      toast.success('Şifreniz güncellendi.')
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-      setTimeout(() => { setPwOpen(false); setPwSuccess(null) }, 2000)
+      setPwOpen(false)
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 401) {
@@ -234,7 +232,6 @@ export default function ProfileEditPage() {
             <span className="section-title">Profili Düzenle</span>
           </div>
 
-          {successMessage && <div className="success-banner">✓ {successMessage}</div>}
           {globalError && <div className="error-banner">⚠️ {globalError}</div>}
 
           {/* ── KİŞİSEL BİLGİLER ── */}
@@ -364,7 +361,6 @@ export default function ProfileEditPage() {
 
             {pwOpen && (
               <div className="password-accordion-body">
-                {pwSuccess && <div className="success-banner">✓ {pwSuccess}</div>}
                 {pwGlobal && <div className="error-banner">⚠️ {pwGlobal}</div>}
 
                 <div className="ob-form-group">

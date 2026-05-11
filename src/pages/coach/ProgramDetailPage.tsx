@@ -10,6 +10,7 @@ import {
   updateProgress,
 } from '../../services/training'
 import { parseApiError } from '../../utils/errorHandler'
+import { useToast } from '../../components/shared/Toast'
 import type { ActiveProgramDetailDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
 
@@ -28,12 +29,12 @@ function dayOrder(key: string): number {
 
 export default function ProgramDetailPage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { programId } = useParams<{ programId: string }>()
 
   const [program, setProgram] = useState<ActiveProgramDetailDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [actionMsg, setActionMsg] = useState<string | null>(null)
 
   // Progress modal state
   const [pmOpen, setPmOpen] = useState(false)
@@ -66,16 +67,15 @@ export default function ProgramDetailPage() {
 
   async function handleStatusAction(action: 'activate' | 'deactivate' | 'complete') {
     if (!programId) return
-    setActionMsg(null)
     try {
       if (action === 'activate') await activateProgram(programId)
       else if (action === 'deactivate') await deactivateProgram(programId)
       else await completeProgram(programId)
       const labels = { activate: 'aktifleştirildi', deactivate: 'deaktifleştirildi', complete: 'tamamlandı' }
-      setActionMsg(`Program ${labels[action]}.`)
+      toast.success(`Program ${labels[action]}.`)
       await fetchProgram()
     } catch (err) {
-      setActionMsg(parseApiError(err, 'İşlem başarısız.'))
+      toast.error(parseApiError(err, 'İşlem başarısız.'))
     }
   }
 
@@ -90,7 +90,7 @@ export default function ProgramDetailPage() {
     try {
       await updateProgress(programId, pmWeeks)
       setPmOpen(false)
-      setActionMsg('İlerleme kaydedildi.')
+      toast.success('İlerleme kaydedildi.')
       await fetchProgram()
     } catch (err) {
       setPmError(parseApiError(err, 'İlerleme kaydedilemedi.'))
@@ -145,8 +145,6 @@ export default function ProgramDetailPage() {
             <button className="btn-back" onClick={() => navigate('/coach/programs')}>← Programlar</button>
             <span className="section-title">{program.name}</span>
           </div>
-
-          {actionMsg && <div className="success-banner">✓ {actionMsg}</div>}
 
           {/* Program Info */}
           <div className="profile-edit-section">
