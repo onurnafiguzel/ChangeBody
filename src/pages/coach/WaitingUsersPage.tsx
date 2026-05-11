@@ -136,7 +136,7 @@ export default function WaitingUsersPage() {
                   key={u.id}
                   user={u}
                   onSelect={(id) => navigate(`/coach/users/${id}`)}
-                  onPrimaryAction={() => alert('Program oluşturma akışı yakında.')}
+                  onPrimaryAction={(id) => navigate(`/coach/programs/new/${id}`)}
                   primaryLabel="Programa Başla →"
                 />
               ))}

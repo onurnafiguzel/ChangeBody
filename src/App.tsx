@@ -14,6 +14,8 @@ import WaitingUsersPage from './pages/coach/WaitingUsersPage'
 import UserDetailForCoach from './pages/coach/UserDetailForCoach'
 import MyProgramsPage from './pages/coach/MyProgramsPage'
 import ProgramDetailPage from './pages/coach/ProgramDetailPage'
+import CreateProgramPage from './pages/coach/CreateProgramPage'
+import ScheduleBuilderPage from './pages/coach/ScheduleBuilderPage'
 import CoachProfilePage from './pages/coach/CoachProfilePage'
 import CoachProfileEditPage from './pages/coach/CoachProfileEditPage'
 import AccessDenied from './pages/AccessDenied'
@@ -169,6 +171,14 @@ export default function App() {
         <Route
           path="/coach/programs"
           element={<RequireRole role="Coach"><MyProgramsPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/programs/new/:userId"
+          element={<RequireRole role="Coach"><CreateProgramPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/programs/:programId/schedule"
+          element={<RequireRole role="Coach"><ScheduleBuilderPage /></RequireRole>}
         />
         <Route
           path="/coach/programs/:programId"

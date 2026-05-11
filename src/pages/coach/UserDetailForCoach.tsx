@@ -174,7 +174,7 @@ export default function UserDetailForCoach() {
             </button>
             <button
               className="btn-primary"
-              onClick={() => alert('Program oluşturma akışı yakında.')}
+              onClick={() => navigate(`/coach/programs/new/${userId}`)}
             >
               💪 Bu Sporcu için Program Oluştur →
             </button>

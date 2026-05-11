@@ -19,6 +19,12 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as typeof error.config & { _retry?: boolean }
 
+    if (error.response?.status === 429) {
+      const retryAfter = (error.response.headers as Record<string, string> | undefined)?.['retry-after']
+      console.warn('[api] 429 rate limit hit', error.config?.url, 'retry-after:', retryAfter ?? 'n/a')
+      // Hata aşağıya iletiliyor; çağıran taraf parseApiError ile kullanıcıya bilgi verir.
+    }
+
     if (error.response?.status === 401 && !original?._retry) {
       original._retry = true
       const refreshToken = localStorage.getItem('refreshToken')

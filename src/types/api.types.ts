@@ -272,7 +272,8 @@ export interface ProgramExerciseDetail {
 export interface CreateTrainingProgramRequest {
   name: string; // minLength: 1, required
   description?: string; // nullable
-  userId: string; // UUID, required
+  userId: string; // UUID, required (atanan sporcu)
+  coachId: string; // UUID, required (programı oluşturan koç)
   durationWeeks: number; // int32, minimum: 1, required
   difficulty: DifficultyLevel; // enum, required
 }

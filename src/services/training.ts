@@ -1,10 +1,28 @@
 import api from './api'
-import type { ActiveProgramDetailDto, UpdateProgressRequest } from '../types/api.types'
+import type {
+  ActiveProgramDetailDto,
+  CreateTrainingProgramRequest,
+  UpdateDailyProgramRequest,
+  UpdateProgressRequest,
+} from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
 
 export async function getTrainingProgram(programId: string): Promise<ActiveProgramDetailDto> {
   const { data } = await api.get<ActiveProgramDetailDto>(API_ENDPOINTS.PROGRAM_DETAIL(programId))
   return data
+}
+
+export async function createTrainingProgram(payload: CreateTrainingProgramRequest): Promise<string> {
+  // BE response: oluşturulan programın UUID'si (raw string)
+  const { data } = await api.post<string>(API_ENDPOINTS.PROGRAMS_CREATE, payload)
+  return data
+}
+
+export async function updateDailyProgram(
+  programId: string,
+  payload: UpdateDailyProgramRequest,
+): Promise<void> {
+  await api.put(API_ENDPOINTS.PROGRAM_UPDATE_DAILY(programId), payload)
 }
 
 export async function updateProgress(programId: string, completedWeeks: number): Promise<void> {
