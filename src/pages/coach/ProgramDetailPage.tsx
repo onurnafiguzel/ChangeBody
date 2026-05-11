@@ -7,7 +7,6 @@ import {
   completeProgram,
   deactivateProgram,
   getTrainingProgram,
-  updateProgress,
 } from '../../services/training'
 import { parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
@@ -36,12 +35,6 @@ export default function ProgramDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Progress modal state
-  const [pmOpen, setPmOpen] = useState(false)
-  const [pmWeeks, setPmWeeks] = useState<number>(0)
-  const [pmLoading, setPmLoading] = useState(false)
-  const [pmError, setPmError] = useState<string | null>(null)
-
   useEffect(() => {
     if (!programId) return
     fetchProgram()
@@ -55,9 +48,6 @@ export default function ProgramDetailPage() {
     try {
       const data = await getTrainingProgram(programId)
       setProgram(data)
-      // İlerleme modal default'u: program.dailyExercises'tan tahmini hafta hesabı
-      const days = data.dailyExercises ? Object.keys(data.dailyExercises).length : 0
-      setPmWeeks(Math.min(data.durationWeeks, Math.floor(days / 7)))
     } catch (err) {
       setError(parseApiError(err, 'Program yüklenemedi.'))
     } finally {
@@ -76,26 +66,6 @@ export default function ProgramDetailPage() {
       await fetchProgram()
     } catch (err) {
       toast.error(parseApiError(err, 'İşlem başarısız.'))
-    }
-  }
-
-  async function handleSaveProgress() {
-    if (!programId || !program) return
-    if (pmWeeks < 0 || pmWeeks > program.durationWeeks) {
-      setPmError(`Tamamlanan hafta 0 ile ${program.durationWeeks} arasında olmalı.`)
-      return
-    }
-    setPmLoading(true)
-    setPmError(null)
-    try {
-      await updateProgress(programId, pmWeeks)
-      setPmOpen(false)
-      toast.success('İlerleme kaydedildi.')
-      await fetchProgram()
-    } catch (err) {
-      setPmError(parseApiError(err, 'İlerleme kaydedilemedi.'))
-    } finally {
-      setPmLoading(false)
     }
   }
 
@@ -261,9 +231,6 @@ export default function ProgramDetailPage() {
             <button className="btn-secondary" onClick={() => alert('Schedule düzenleme akışı yakında.')}>
               Programı Düzenle
             </button>
-            <button className="btn-primary" onClick={() => setPmOpen(true)}>
-              İlerleme Güncelle
-            </button>
           </div>
 
           <div className="profile-edit-section" style={{ marginTop: 16 }}>
@@ -288,36 +255,6 @@ export default function ProgramDetailPage() {
         </div>
         <BottomNav />
       </div>
-
-      {/* Progress Modal */}
-      {pmOpen && (
-        <div className="payment-modal-overlay" onClick={() => !pmLoading && setPmOpen(false)}>
-          <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="payment-modal-title">İlerleme Güncelle</div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 12 }}>
-              Tamamlanan hafta sayısını girin (0 – {program.durationWeeks}).
-            </p>
-            <div className="ob-form-group">
-              <label className="ob-label">Tamamlanan Hafta</label>
-              <input
-                className="ob-input"
-                type="number"
-                min={0}
-                max={program.durationWeeks}
-                value={pmWeeks}
-                onChange={(e) => setPmWeeks(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            {pmError && <div className="error-banner">⚠️ {pmError}</div>}
-            <div className="payment-modal-actions">
-              <button className="btn-pay-cancel" onClick={() => setPmOpen(false)} disabled={pmLoading}>İptal</button>
-              <button className="btn-pay" onClick={handleSaveProgress} disabled={pmLoading}>
-                {pmLoading ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
