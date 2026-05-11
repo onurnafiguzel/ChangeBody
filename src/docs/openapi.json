@@ -1693,6 +1693,96 @@
         }
       }
     },
+    "/api/workout-sessions": {
+      "post": {
+        "tags": ["Workout Sessions"],
+        "summary": "Create a new workout session (own user only)",
+        "description": "Persists a workout session as a single row whose JSON column captures all exercise/set/weight/reps data. The authenticated user can only create sessions for themselves.",
+        "operationId": "CreateWorkoutSession",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateWorkoutSessionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workout session created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "type": "string", "format": "uuid", "description": "Newly created session ID" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } }
+          },
+          "401": {
+            "description": "Unauthorized — JWT token required",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "403": {
+            "description": "Forbidden — cannot log session for a different user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/workout-sessions": {
+      "get": {
+        "tags": ["Workout Sessions"],
+        "summary": "Get last N workout sessions for a user + day key (own user only)",
+        "description": "Returns the user's most recent workout sessions for the given day (e.g. 'Day-3'). The JSON exercise/set data is deserialized into nested fields for easy consumption by the FE.",
+        "operationId": "GetUserWorkoutSessionsByDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "dayKey",
+            "in": "query",
+            "required": true,
+            "description": "Training program day key (e.g. 'Day-1', 'Day-3')",
+            "schema": { "type": "string", "example": "Day-3" }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Maximum number of sessions to return (default 4, max 50)",
+            "schema": { "type": "integer", "format": "int32", "default": 4, "minimum": 1, "maximum": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessions retrieved successfully (ordered by RecordDate DESC)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WorkoutSessionDto" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — JWT token required",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "403": {
+            "description": "Forbidden — users can only view their own sessions",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    },
     "/api/waiting-users": {
       "get": {
         "tags": ["Waiting Users"],
@@ -2687,6 +2777,75 @@
           "description": { "type": "string", "nullable": true, "maxLength": 1000 }
         }
       },
+      "CreateWorkoutSessionRequest": {
+        "type": "object",
+        "required": ["userId", "dayKey", "recordDate", "exercises"],
+        "properties": {
+          "userId":            { "type": "string", "format": "uuid" },
+          "trainingProgramId": { "type": "string", "format": "uuid", "nullable": true, "description": "Optional reference to the training program this session belongs to" },
+          "dayKey":            { "type": "string", "pattern": "^Day-\\d+$", "example": "Day-3" },
+          "recordDate":        { "type": "string", "format": "date", "description": "Session date (UTC). Must not be in the future." },
+          "exercises": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/WorkoutExerciseInput" }
+          }
+        }
+      },
+      "WorkoutExerciseInput": {
+        "type": "object",
+        "required": ["exerciseId", "sets"],
+        "properties": {
+          "exerciseId": { "type": "string", "format": "uuid" },
+          "sets": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/WorkoutSetInput" }
+          }
+        }
+      },
+      "WorkoutSetInput": {
+        "type": "object",
+        "required": ["setNumber", "weight", "reps"],
+        "properties": {
+          "setNumber": { "type": "integer", "format": "int32", "minimum": 1 },
+          "weight":    { "type": "number",  "format": "decimal", "minimum": 0, "description": "Weight in kg" },
+          "reps":      { "type": "integer", "format": "int32", "minimum": 1 }
+        }
+      },
+      "WorkoutSessionDto": {
+        "type": "object",
+        "properties": {
+          "id":                { "type": "string", "format": "uuid" },
+          "userId":            { "type": "string", "format": "uuid" },
+          "trainingProgramId": { "type": "string", "format": "uuid", "nullable": true },
+          "dayKey":            { "type": "string", "example": "Day-3" },
+          "recordDate":        { "type": "string", "format": "date" },
+          "createdAt":         { "type": "string", "format": "date-time" },
+          "exercises": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WorkoutExerciseDto" }
+          }
+        }
+      },
+      "WorkoutExerciseDto": {
+        "type": "object",
+        "properties": {
+          "exerciseId": { "type": "string", "format": "uuid" },
+          "sets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WorkoutSetDto" }
+          }
+        }
+      },
+      "WorkoutSetDto": {
+        "type": "object",
+        "properties": {
+          "setNumber": { "type": "integer", "format": "int32" },
+          "weight":    { "type": "number",  "format": "decimal", "description": "Weight in kg" },
+          "reps":      { "type": "integer", "format": "int32" }
+        }
+      },
       "WaitingUserStatusDto": {
         "type": "object",
         "properties": {
@@ -2995,6 +3154,10 @@
     {
       "name": "Payments",
       "description": "Payment processing (requires JWT authentication)"
+    },
+    {
+      "name": "Workout Sessions",
+      "description": "Per-user workout session logging — stores exercise/set/weight/reps as JSON for a given day"
     }
   ]
 }

@@ -299,6 +299,48 @@ export interface UpdateProgressRequest {
   completedWeeks: number; // int32, minimum: 0, required
 }
 
+// ─── Workout Sessions ────────────────────────────────────────────────────
+
+export interface WorkoutSetInput {
+  setNumber: number;  // min 1
+  weight: number;     // kg, min 0
+  reps: number;       // min 1
+}
+
+export interface WorkoutExerciseInput {
+  exerciseId: string; // UUID
+  sets: WorkoutSetInput[]; // min 1
+}
+
+export interface CreateWorkoutSessionRequest {
+  userId: string;                       // UUID
+  trainingProgramId?: string | null;    // UUID, opsiyonel
+  dayKey: string;                        // regex ^Day-\d+$
+  recordDate: string;                    // "YYYY-MM-DD"
+  exercises: WorkoutExerciseInput[];     // min 1
+}
+
+export interface WorkoutSetDto {
+  setNumber: number;
+  weight: number; // kg
+  reps: number;
+}
+
+export interface WorkoutExerciseDto {
+  exerciseId: string;
+  sets: WorkoutSetDto[];
+}
+
+export interface WorkoutSessionDto {
+  id: string;
+  userId: string;
+  trainingProgramId?: string | null;
+  dayKey: string;
+  recordDate: string;   // "YYYY-MM-DD"
+  createdAt: string;    // ISO date-time
+  exercises: WorkoutExerciseDto[];
+}
+
 export interface ActiveProgramDetailDto {
   id: string; // UUID
   name: string;
@@ -523,6 +565,10 @@ export const API_ENDPOINTS = {
   PROGRAM_UPDATE_DAILY: (programId: string) => `/api/training-programs/${programId}/daily-program`,
   PROGRAM_UPDATE_PROGRESS: (programId: string) => `/api/training-programs/${programId}/progress`,
   PROGRAM_COMPLETE: (programId: string) => `/api/training-programs/${programId}/complete`,
+
+  // Workout Sessions
+  WORKOUT_SESSIONS_CREATE: "/api/workout-sessions",
+  USER_WORKOUT_SESSIONS: (userId: string) => `/api/users/${userId}/workout-sessions`,
 
   // Payments
   PAYMENTS_PROCESS: "/api/payments",

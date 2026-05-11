@@ -12,6 +12,7 @@ import '../../styles/dashboard.css'
 import '../../styles/exercises.css'
 
 const DIFFICULTY_LABEL: Record<string, string> = { Beginner: 'Başlangıç', Intermediate: 'Orta Seviye', Advanced: 'İleri Seviye' }
+const DAY_N_REGEX = /^Day-\d+$/i
 
 const WEEKDAY_ORDER: Record<string, number> = {
   Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7,
@@ -238,9 +239,21 @@ export default function ProgramsPage() {
               <p className="placeholder-desc">Bu program için henüz egzersiz programı oluşturulmamış.</p>
             ) : (
               <div className="schedule-readonly">
-                {sortedDays.map(([day, exercises]) => (
+                {sortedDays.map(([day, exercises]) => {
+                  const canStart = DAY_N_REGEX.test(day) && exercises.length > 0
+                  return (
                   <div key={day} className="schedule-day-block">
-                    <div className="schedule-day-title">{displayDay(day)}</div>
+                    <div className="schedule-day-header-row">
+                      <div className="schedule-day-title">{displayDay(day)}</div>
+                      <button
+                        className="btn-workout-start"
+                        disabled={!canStart}
+                        onClick={() => canStart && navigate(`/programs/workout/${day}`)}
+                        title={canStart ? 'İdman kaydını başlat' : 'Bu gün için kayıt formatı uygun değil (Day-N gerekli)'}
+                      >
+                        🏋️ Başlat
+                      </button>
+                    </div>
                     {exercises.length === 0 ? (
                       <div className="schedule-rest">Dinlenme Günü</div>
                     ) : (
@@ -273,7 +286,8 @@ export default function ProgramsPage() {
                       </ul>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

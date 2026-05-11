@@ -7,6 +7,7 @@ import ProfileCompletion from './pages/onboarding/ProfileCompletion'
 import ExercisesPage from './pages/exercises/ExercisesPage'
 import PackagesPage from './pages/packages/PackagesPage'
 import ProgramsPage from './pages/programs/ProgramsPage'
+import WorkoutSessionPage from './pages/programs/WorkoutSessionPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditPage from './pages/profile/ProfileEditPage'
 import CoachDashboard from './pages/coach/CoachDashboard'
@@ -130,6 +131,16 @@ export default function App() {
             <RequireRole role="User">
               <ProfileGuard>
                 <ProgramsPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/programs/workout/:dayKey"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <WorkoutSessionPage />
               </ProfileGuard>
             </RequireRole>
           }
