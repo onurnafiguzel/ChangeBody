@@ -4,7 +4,12 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { listFoods } from '../../services/foods'
 import FoodFormModal from '../../components/foods/FoodFormModal'
-import { activateNutritionPlan, createNutritionPlan } from '../../services/nutritionPlans'
+import {
+  activateNutritionPlan,
+  createNutritionPlan,
+  getNutritionPlan,
+  updateNutritionPlan,
+} from '../../services/nutritionPlans'
 import { parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
 import type {
@@ -12,6 +17,7 @@ import type {
   FoodDto,
   MealInput,
   NutritionDayType,
+  UpdateNutritionPlanRequest,
 } from '../../types/api.types'
 import '../../styles/dashboard.css'
 import '../../styles/exercises.css'
@@ -154,16 +160,27 @@ function dayMacros(day: UiDay): MealMacros {
 export default function MealBuilderPage() {
   const navigate = useNavigate()
   const toast = useToast()
-  const { userId } = useParams<{ userId: string }>()
+  const { userId: routeUserId, planId } = useParams<{ userId?: string; planId?: string }>()
   const location = useLocation()
-  const meta = (location.state as BuilderState | null) ?? null
+  const initialMeta = (location.state as BuilderState | null) ?? null
+  const isEdit = !!planId
 
-  // Redirect if no meta (deep-link with no state)
+  // Edit modunda meta/userId/days plan response'undan hidrate edilir
+  const [meta, setMeta] = useState<BuilderState | null>(initialMeta)
+  const [editUserId, setEditUserId] = useState<string | undefined>(undefined)
+  const [planActive, setPlanActive] = useState<boolean>(false)
+  const [hydrating, setHydrating] = useState<boolean>(isEdit)
+  const [hydrateError, setHydrateError] = useState<string | null>(null)
+
+  const userId = isEdit ? editUserId : routeUserId
+
+  // Redirect if create-mode with no meta (deep-link with no state)
   useEffect(() => {
-    if (!meta) {
-      navigate(`/coach/nutrition-plans/new/${userId}`, { replace: true })
+    if (isEdit) return
+    if (!initialMeta) {
+      navigate(`/coach/nutrition-plans/new/${routeUserId}`, { replace: true })
     }
-  }, [meta, navigate, userId])
+  }, [isEdit, initialMeta, navigate, routeUserId])
 
   // Food library state
   const [foods, setFoods] = useState<FoodDto[]>([])
@@ -173,10 +190,10 @@ export default function MealBuilderPage() {
   const [defaultGrams, setDefaultGrams] = useState<number>(100)
   const [defaultPieces, setDefaultPieces] = useState<number>(1)
 
-  // Days
+  // Days — create modunda meta'dan, edit modunda boş başlar + hidrasyonda doldurulur
   const [days, setDays] = useState<UiDay[]>(() => {
-    if (!meta) return []
-    if (meta.mode === 'single') return [{ type: 'WorkoutDay', meals: defaultMeals() }]
+    if (isEdit || !initialMeta) return []
+    if (initialMeta.mode === 'single') return [{ type: 'WorkoutDay', meals: defaultMeals() }]
     return [
       { type: 'WorkoutDay', meals: defaultMeals() },
       { type: 'OffDay', meals: defaultMeals() },
@@ -206,11 +223,63 @@ export default function MealBuilderPage() {
   }
 
   useEffect(() => {
-    listFoods()
-      .then((list) => setFoods(list.filter((f) => f.isActive)))
-      .catch((err) => setFoodError(parseApiError(err, 'Besinler yüklenemedi.')))
-      .finally(() => setFoodLoading(false))
-  }, [])
+    let cancelled = false
+
+    async function bootstrap() {
+      try {
+        if (isEdit && planId) {
+          // Plan + foods paralel
+          const [foodsList, plan] = await Promise.all([listFoods(), getNutritionPlan(planId)])
+          if (cancelled) return
+          const activeFoods = foodsList.filter((f) => f.isActive)
+          // Hidrasyon: gerekirse pasif/eksik foods'u da ekleyelim ki plan içindeki kayıt kaybolmasın
+          const foodMap = new Map<string, FoodDto>(foodsList.map((f) => [f.id, f]))
+          setFoods(activeFoods)
+
+          setEditUserId(plan.userId)
+          setPlanActive(plan.isActive)
+          setMeta({
+            title: plan.title,
+            description: plan.description ?? undefined,
+            mode: plan.days.length === 2 ? 'two' : 'single',
+          })
+
+          // Günleri & öğünleri & item'ları UI shape'ine çevir
+          const hydratedDays: UiDay[] = plan.days.map((d) => ({
+            type: d.dayType,
+            meals: d.meals.map((meal) => ({
+              id: nextMealId(),
+              name: meal.name,
+              items: meal.items
+                .map((it) => {
+                  const food = foodMap.get(it.foodId)
+                  if (!food) return null
+                  return { foodId: it.foodId, qty: it.quantity, _food: food }
+                })
+                .filter((x): x is { foodId: string; qty: number; _food: FoodDto } => x != null),
+            })),
+          }))
+          setDays(hydratedDays)
+        } else {
+          const list = await listFoods()
+          if (cancelled) return
+          setFoods(list.filter((f) => f.isActive))
+        }
+      } catch (err) {
+        if (cancelled) return
+        if (isEdit) setHydrateError(parseApiError(err, 'Plan yüklenemedi.'))
+        else setFoodError(parseApiError(err, 'Besinler yüklenemedi.'))
+      } finally {
+        if (!cancelled) {
+          setFoodLoading(false)
+          setHydrating(false)
+        }
+      }
+    }
+
+    bootstrap()
+    return () => { cancelled = true }
+  }, [isEdit, planId])
 
   const filteredFoods = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -363,12 +432,29 @@ export default function MealBuilderPage() {
     }
     setSaving(true)
     try {
-      const planId = await createNutritionPlan(payload)
-      if (activate) {
-        await activateNutritionPlan(planId)
-        toast.success('Plan oluşturuldu ve aktifleştirildi.')
+      let resolvedPlanId: string
+      if (isEdit && planId) {
+        const updatePayload: UpdateNutritionPlanRequest = {
+          title: payload.title,
+          description: payload.description,
+          days: payload.days,
+        }
+        await updateNutritionPlan(planId, updatePayload)
+        resolvedPlanId = planId
+        if (activate && !planActive) {
+          await activateNutritionPlan(resolvedPlanId)
+          toast.success('Plan güncellendi ve aktifleştirildi.')
+        } else {
+          toast.success('Değişiklikler kaydedildi.')
+        }
       } else {
-        toast.success('Plan taslak olarak kaydedildi.')
+        resolvedPlanId = await createNutritionPlan(payload)
+        if (activate) {
+          await activateNutritionPlan(resolvedPlanId)
+          toast.success('Plan oluşturuldu ve aktifleştirildi.')
+        } else {
+          toast.success('Plan taslak olarak kaydedildi.')
+        }
       }
       navigate(-1)
     } catch (err) {
@@ -378,6 +464,36 @@ export default function MealBuilderPage() {
     }
   }
 
+  if (isEdit && hydrating) {
+    return (
+      <div className="app-shell">
+        <Sidebar />
+        <div className="app-main">
+          <Header />
+          <div className="page-content">
+            <div className="skeleton" style={{ height: 60, borderRadius: 12, marginBottom: 16 }} />
+            <div className="skeleton" style={{ height: 400, borderRadius: 12 }} />
+          </div>
+          <BottomNav />
+        </div>
+      </div>
+    )
+  }
+  if (isEdit && hydrateError) {
+    return (
+      <div className="app-shell">
+        <Sidebar />
+        <div className="app-main">
+          <Header />
+          <div className="page-content">
+            <div className="error-banner">⚠️ {hydrateError}</div>
+            <button className="btn-back" onClick={() => navigate(-1)}>← Geri</button>
+          </div>
+          <BottomNav />
+        </div>
+      </div>
+    )
+  }
   if (!meta) return null
 
   return (
@@ -388,7 +504,9 @@ export default function MealBuilderPage() {
         <div className="page-content">
           <div className="section-header" style={{ marginBottom: 16 }}>
             <button className="btn-back" onClick={() => navigate(-1)}>← Geri</button>
-            <span className="section-title">{meta.title} · Öğünleri Oluştur</span>
+            <span className="section-title">
+              {isEdit ? `Düzenle · ${meta.title}` : `${meta.title} · Öğünleri Oluştur`}
+            </span>
           </div>
 
           <div className="schedule-builder-layout">
@@ -657,16 +775,22 @@ export default function MealBuilderPage() {
               onClick={() => handleSave(false)}
               disabled={saving}
             >
-              {saving ? 'Kaydediliyor…' : 'Taslak Kaydet'}
+              {saving
+                ? 'Kaydediliyor…'
+                : (isEdit ? 'Değişiklikleri Kaydet' : 'Taslak Kaydet')}
             </button>
-            <button
-              className="btn-primary"
-              onClick={() => handleSave(true)}
-              disabled={saving}
-            >
-              {saving && <span className="loading-spinner" />}
-              {saving ? 'Yayınlanıyor…' : 'Yayınla & Aktifleştir →'}
-            </button>
+            {(!isEdit || !planActive) && (
+              <button
+                className="btn-primary"
+                onClick={() => handleSave(true)}
+                disabled={saving}
+              >
+                {saving && <span className="loading-spinner" />}
+                {saving
+                  ? 'Yayınlanıyor…'
+                  : (isEdit ? 'Kaydet & Yeniden Aktifleştir →' : 'Yayınla & Aktifleştir →')}
+              </button>
+            )}
           </div>
         </div>
         <BottomNav />

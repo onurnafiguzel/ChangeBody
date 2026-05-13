@@ -216,6 +216,10 @@ export default function App() {
           element={<RequireRole role="Coach"><MealBuilderPage /></RequireRole>}
         />
         <Route
+          path="/coach/nutrition-plans/:planId/edit"
+          element={<RequireRole role="Coach"><MealBuilderPage /></RequireRole>}
+        />
+        <Route
           path="/coach/profile"
           element={<RequireRole role="Coach"><CoachProfilePage /></RequireRole>}
         />

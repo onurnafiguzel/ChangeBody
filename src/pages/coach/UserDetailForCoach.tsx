@@ -2,9 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
+import NutritionPlanViewModal from '../../components/nutrition/NutritionPlanViewModal'
 import { getUserProfile, getWaitingUserStatus } from '../../services/users'
+import {
+  activateNutritionPlan,
+  deactivateNutritionPlan,
+  getUserNutritionPlans,
+} from '../../services/nutritionPlans'
 import { parseApiError } from '../../utils/errorHandler'
-import type { UserDto, WaitingUserStatusDto } from '../../types/api.types'
+import { useToast } from '../../components/shared/Toast'
+import type { NutritionPlanListItemDto, UserDto, WaitingUserStatusDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
 
 const GENDER_TR: Record<string, string> = { Male: 'Erkek', Female: 'Kadın', Other: 'Diğer' }
@@ -17,10 +24,16 @@ function formatDate(iso?: string): string {
 
 export default function UserDetailForCoach() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { userId } = useParams<{ userId: string }>()
 
   const [profile, setProfile] = useState<UserDto | null>(null)
   const [waitStatus, setWaitStatus] = useState<WaitingUserStatusDto | null>(null)
+  const [plans, setPlans] = useState<NutritionPlanListItemDto[]>([])
+  const [plansLoading, setPlansLoading] = useState(false)
+  const [plansError, setPlansError] = useState<string | null>(null)
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null)
+  const [viewPlanId, setViewPlanId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,7 +51,51 @@ export default function UserDetailForCoach() {
       })
       .catch((err) => setError(parseApiError(err, 'Sporcu bilgileri yüklenemedi.')))
       .finally(() => setLoading(false))
+
+    fetchPlans()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
+
+  async function fetchPlans() {
+    if (!userId) return
+    setPlansLoading(true)
+    setPlansError(null)
+    try {
+      const list = await getUserNutritionPlans(userId)
+      setPlans([...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+    } catch (err) {
+      setPlansError(parseApiError(err, 'Beslenme planları yüklenemedi.'))
+    } finally {
+      setPlansLoading(false)
+    }
+  }
+
+  async function handleActivate(plan: NutritionPlanListItemDto) {
+    setBusyPlanId(plan.id)
+    try {
+      await activateNutritionPlan(plan.id)
+      toast.success('Plan aktifleştirildi.')
+      await fetchPlans()
+    } catch (err) {
+      toast.error(parseApiError(err, 'Aktifleştirilemedi.'))
+    } finally {
+      setBusyPlanId(null)
+    }
+  }
+
+  async function handleDeactivate(plan: NutritionPlanListItemDto) {
+    if (!confirm(`"${plan.title}" planı pasifleştirilsin mi?`)) return
+    setBusyPlanId(plan.id)
+    try {
+      await deactivateNutritionPlan(plan.id)
+      toast.success('Plan pasifleştirildi.')
+      await fetchPlans()
+    } catch (err) {
+      toast.error(parseApiError(err, 'Pasifleştirilemedi.'))
+    } finally {
+      setBusyPlanId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -167,6 +224,77 @@ export default function UserDetailForCoach() {
             </div>
           )}
 
+          {/* Beslenme Plan Geçmişi */}
+          <div className="profile-edit-section">
+            <div className="profile-edit-section-title">🥗 Beslenme Plan Geçmişi</div>
+            {plansLoading ? (
+              <>
+                <div className="skeleton" style={{ height: 60, borderRadius: 10, marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 60, borderRadius: 10 }} />
+              </>
+            ) : plansError ? (
+              <div className="error-banner">
+                ⚠️ {plansError}
+                <button className="btn-retry" onClick={fetchPlans} style={{ marginLeft: 12 }}>Tekrar Dene</button>
+              </div>
+            ) : plans.length === 0 ? (
+              <p className="placeholder-desc" style={{ margin: 0 }}>
+                Bu sporcu için henüz beslenme planı yok.
+              </p>
+            ) : (
+              <ul className="np-history-list">
+                {plans.map((plan) => (
+                  <li key={plan.id} className="np-history-item">
+                    <div className="np-history-text">
+                      <div className="np-history-title">
+                        {plan.title}
+                        {plan.isActive
+                          ? <span className="np-history-badge active">Aktif</span>
+                          : <span className="np-history-badge inactive">Pasif</span>}
+                      </div>
+                      <div className="np-history-meta">
+                        Antrenör: {plan.coachName} · {formatDate(plan.createdAt)}
+                      </div>
+                    </div>
+                    <div className="np-history-actions">
+                      <button
+                        className="food-card-action"
+                        onClick={() => setViewPlanId(plan.id)}
+                        disabled={busyPlanId === plan.id}
+                      >
+                        🔍 Görüntüle
+                      </button>
+                      <button
+                        className="food-card-action"
+                        onClick={() => navigate(`/coach/nutrition-plans/${plan.id}/edit`)}
+                        disabled={busyPlanId === plan.id}
+                      >
+                        ✎ Düzenle
+                      </button>
+                      {plan.isActive ? (
+                        <button
+                          className="food-card-action danger"
+                          onClick={() => handleDeactivate(plan)}
+                          disabled={busyPlanId === plan.id}
+                        >
+                          ⏸ Deaktive Et
+                        </button>
+                      ) : (
+                        <button
+                          className="food-card-action"
+                          onClick={() => handleActivate(plan)}
+                          disabled={busyPlanId === plan.id}
+                        >
+                          ▶ Aktifleştir
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Action */}
           <div className="profile-edit-actions">
             <button className="btn-secondary" onClick={() => navigate('/coach/waiting-users')}>
@@ -182,6 +310,12 @@ export default function UserDetailForCoach() {
         </div>
         <BottomNav />
       </div>
+
+      <NutritionPlanViewModal
+        open={viewPlanId != null}
+        planId={viewPlanId}
+        onClose={() => setViewPlanId(null)}
+      />
     </div>
   )
 }

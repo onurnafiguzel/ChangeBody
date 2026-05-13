@@ -461,6 +461,14 @@ export interface NutritionDayDto {
   totalFat: number;
 }
 
+export interface NutritionPlanListItemDto {
+  id: string;
+  title: string;
+  isActive: boolean;
+  coachName: string;
+  createdAt: string;
+}
+
 export interface NutritionPlanDetailDto {
   id: string;
   userId: string;

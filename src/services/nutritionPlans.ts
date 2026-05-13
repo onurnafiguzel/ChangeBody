@@ -2,6 +2,7 @@ import api from './api'
 import type {
   CreateNutritionPlanRequest,
   NutritionPlanDetailDto,
+  NutritionPlanListItemDto,
   UpdateNutritionPlanRequest,
 } from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
@@ -33,5 +34,10 @@ export async function deactivateNutritionPlan(planId: string): Promise<void> {
 
 export async function getUserActiveNutritionPlan(userId: string): Promise<NutritionPlanDetailDto> {
   const { data } = await api.get<NutritionPlanDetailDto>(API_ENDPOINTS.USER_ACTIVE_NUTRITION_PLAN(userId))
+  return data
+}
+
+export async function getUserNutritionPlans(userId: string): Promise<NutritionPlanListItemDto[]> {
+  const { data } = await api.get<NutritionPlanListItemDto[]>(API_ENDPOINTS.USER_NUTRITION_PLANS(userId))
   return data
 }
