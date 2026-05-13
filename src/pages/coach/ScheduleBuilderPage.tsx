@@ -257,19 +257,6 @@ export default function ScheduleBuilderPage() {
     return out
   }
 
-  async function handleSaveDraft() {
-    if (!programId) return
-    setSaving(true)
-    try {
-      await updateDailyProgram(programId, buildPayload())
-      toast.success('Taslak kaydedildi.')
-    } catch (err) {
-      toast.error(parseApiError(err, 'Kaydedilemedi.'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   async function handlePublish() {
     if (!programId) return
     const totalExercises = days.reduce((sum, d) => sum + d.exercises.length, 0)
@@ -514,13 +501,6 @@ export default function ScheduleBuilderPage() {
               disabled={saving}
             >
               İptal
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={handleSaveDraft}
-              disabled={saving}
-            >
-              {saving ? 'Kaydediliyor…' : 'Taslak Kaydet'}
             </button>
             <button
               className="btn-primary"

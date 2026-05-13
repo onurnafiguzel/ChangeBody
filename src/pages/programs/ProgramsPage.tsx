@@ -8,6 +8,7 @@ import { getUserActiveNutritionPlan } from '../../services/nutritionPlans'
 import { getStoredUser } from '../../services/auth'
 import { parseApiError } from '../../utils/errorHandler'
 import { MUSCLE_TR, DIFFICULTY_TR, MUSCLE_ICONS } from '../../components/exercises/ExerciseCard'
+import ScheduleView from '../../components/programs/ScheduleView'
 import type {
   ActiveProgramDetailDto,
   ExerciseDto,
@@ -18,16 +19,10 @@ import '../../styles/dashboard.css'
 import '../../styles/exercises.css'
 
 const DIFFICULTY_LABEL: Record<string, string> = { Beginner: 'Başlangıç', Intermediate: 'Orta Seviye', Advanced: 'İleri Seviye' }
-const DAY_N_REGEX = /^Day-\d+$/i
 
 const WEEKDAY_ORDER: Record<string, number> = {
   Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7,
   Pazartesi: 1, Salı: 2, Çarşamba: 3, Perşembe: 4, Cuma: 5, Cumartesi: 6, Pazar: 7,
-}
-
-const DAY_TR: Record<string, string> = {
-  Monday: 'Pazartesi', Tuesday: 'Salı', Wednesday: 'Çarşamba',
-  Thursday: 'Perşembe', Friday: 'Cuma', Saturday: 'Cumartesi', Sunday: 'Pazar',
 }
 
 const NUTRITION_DAY_TR: Record<NutritionDayType, string> = {
@@ -52,12 +47,6 @@ function dayOrder(key: string): number {
   if (dayMatch) return parseInt(dayMatch[1], 10)
   if (WEEKDAY_ORDER[key] != null) return 100 + WEEKDAY_ORDER[key]
   return 1000
-}
-
-function displayDay(key: string): string {
-  const dayMatch = key.match(/Day-(\d+)/i)
-  if (dayMatch) return `Gün ${dayMatch[1]}`
-  return DAY_TR[key] ?? key
 }
 
 function formatDate(iso?: string): string {
@@ -351,61 +340,12 @@ export default function ProgramsPage() {
           {/* Haftalık Schedule */}
           <div className="profile-edit-section">
             <div className="profile-edit-section-title">📅 Haftalık Program</div>
-            {sortedDays.length === 0 ? (
-              <p className="placeholder-desc">Bu program için henüz egzersiz programı oluşturulmamış.</p>
-            ) : (
-              <div className="schedule-readonly">
-                {sortedDays.map(([day, exercises]) => {
-                  const canStart = DAY_N_REGEX.test(day) && exercises.length > 0
-                  return (
-                  <div key={day} className="schedule-day-block">
-                    <div className="schedule-day-header-row">
-                      <div className="schedule-day-title">{displayDay(day)}</div>
-                      <button
-                        className="btn-workout-start"
-                        disabled={!canStart}
-                        onClick={() => canStart && navigate(`/programs/workout/${day}`)}
-                        title={canStart ? 'İdman kaydını başlat' : 'Bu gün için kayıt formatı uygun değil (Day-N gerekli)'}
-                      >
-                        🏋️ Başlat
-                      </button>
-                    </div>
-                    {exercises.length === 0 ? (
-                      <div className="schedule-rest">Dinlenme Günü</div>
-                    ) : (
-                      <ul className="schedule-exercise-list">
-                        {exercises.map((ex, idx) => {
-                          const lookup = exerciseMap.get(ex.exerciseId)
-                          return (
-                            <li
-                              key={`${day}-${idx}`}
-                              onClick={() => lookup && setSelected(lookup)}
-                              style={{ cursor: lookup ? 'pointer' : 'default' }}
-                              role={lookup ? 'button' : undefined}
-                              tabIndex={lookup ? 0 : undefined}
-                              onKeyDown={(e) => {
-                                if (lookup && (e.key === 'Enter' || e.key === ' ')) {
-                                  e.preventDefault()
-                                  setSelected(lookup)
-                                }
-                              }}
-                            >
-                              <span className="schedule-exercise-meta">
-                                <strong>{lookup?.name ?? '(Bilinmeyen egzersiz)'}</strong>
-                                {lookup?.muscleGroup && <> · {MUSCLE_TR[lookup.muscleGroup] ?? lookup.muscleGroup}</>}
-                                <> · {ex.sets} set · {ex.reps} tekrar</>
-                              </span>
-                              {ex.explanation && <div className="schedule-exercise-note">💬 {ex.explanation}</div>}
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                  )
-                })}
-              </div>
-            )}
+            <ScheduleView
+              dailyExercises={program.dailyExercises}
+              exerciseMap={exerciseMap}
+              onExerciseSelect={setSelected}
+              onStartDay={(day) => navigate(`/programs/workout/${day}`)}
+            />
           </div>
           </>
           ) : (

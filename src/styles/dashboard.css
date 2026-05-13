@@ -2224,3 +2224,35 @@
   .np-history-item { flex-direction: column; align-items: stretch; }
   .np-history-actions { justify-content: flex-end; }
 }
+
+/* ─── ScheduleView accordion ─── */
+.schedule-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  flex: 1;
+  text-align: left;
+  color: var(--text);
+}
+.schedule-day-toggle:hover .schedule-day-title { color: var(--accent); }
+.schedule-day-chevron {
+  display: inline-block;
+  transition: transform 0.18s ease;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.schedule-day-chevron.open { transform: rotate(90deg); color: var(--accent); }
+.schedule-day-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.schedule-day-block.open .schedule-day-title { color: var(--text); }

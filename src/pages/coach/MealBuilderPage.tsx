@@ -770,15 +770,15 @@ export default function MealBuilderPage() {
             >
               İptal
             </button>
-            <button
-              className="btn-secondary"
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
-              {saving
-                ? 'Kaydediliyor…'
-                : (isEdit ? 'Değişiklikleri Kaydet' : 'Taslak Kaydet')}
-            </button>
+            {isEdit && (
+              <button
+                className="btn-secondary"
+                onClick={() => handleSave(false)}
+                disabled={saving}
+              >
+                {saving ? 'Kaydediliyor…' : 'Değişiklikleri Kaydet'}
+              </button>
+            )}
             {(!isEdit || !planActive) && (
               <button
                 className="btn-primary"
