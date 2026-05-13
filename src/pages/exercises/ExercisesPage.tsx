@@ -4,6 +4,8 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import ExerciseCard from '../../components/exercises/ExerciseCard'
 import ExerciseFilters, { type FilterState } from '../../components/exercises/ExerciseFilters'
+import Skeleton from '../../components/shared/Skeleton'
+import EmptyState from '../../components/shared/EmptyState'
 import { getExercises, getMuscleGroups } from '../../services/exercises'
 import { getStoredUser } from '../../services/auth'
 import type { ExerciseDto } from '../../types/api.types'
@@ -133,15 +135,15 @@ export default function ExercisesPage() {
           <div className="exercise-grid">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="exercise-card-skeleton" />
+                  <Skeleton key={i} variant="card" />
                 ))
               : exercises.length === 0
               ? (
-                <div className="empty-state">
-                  <span className="empty-state-icon">🔍</span>
-                  <p className="empty-state-text">Egzersiz bulunamadı</p>
-                  <p className="empty-state-sub">Filtrelerinizi değiştirmeyi deneyin</p>
-                </div>
+                <EmptyState
+                  icon="🔍"
+                  title="Egzersiz bulunamadı"
+                  description="Filtrelerinizi değiştirmeyi deneyin"
+                />
               )
               : exercises.map((ex) => (
                   <ExerciseCard key={ex.id} exercise={ex} onClick={setSelected} />
