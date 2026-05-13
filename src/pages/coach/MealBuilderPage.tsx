@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { listFoods } from '../../services/foods'
+import FoodFormModal from '../../components/foods/FoodFormModal'
 import { activateNutritionPlan, createNutritionPlan } from '../../services/nutritionPlans'
 import { parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
@@ -193,6 +194,16 @@ export default function MealBuilderPage() {
   } | null>(null)
 
   const [saving, setSaving] = useState(false)
+  const [newFoodModalOpen, setNewFoodModalOpen] = useState(false)
+
+  async function reloadFoods() {
+    try {
+      const list = await listFoods()
+      setFoods(list.filter((f) => f.isActive))
+    } catch (err) {
+      setFoodError(parseApiError(err, 'Besinler yenilenemedi.'))
+    }
+  }
 
   useEffect(() => {
     listFoods()
@@ -384,8 +395,18 @@ export default function MealBuilderPage() {
             {/* ─── Sol: Besin Havuzu ─── */}
             <aside className="exercise-pool-panel">
               <div className="exercise-pool-header">
-                <div className="exercise-pool-title">🥗 Besin Havuzu</div>
-                <div className="exercise-pool-hint">Sürükleyip öğüne bırak</div>
+                <div>
+                  <div className="exercise-pool-title">🥗 Besin Havuzu</div>
+                  <div className="exercise-pool-hint">Sürükleyip öğüne bırak</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setNewFoodModalOpen(true)}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  + Yeni Besin
+                </button>
               </div>
 
               <div className="filter-bar" style={{ marginBottom: 12 }}>
@@ -650,6 +671,17 @@ export default function MealBuilderPage() {
         </div>
         <BottomNav />
       </div>
+
+      <FoodFormModal
+        open={newFoodModalOpen}
+        food={null}
+        onClose={() => setNewFoodModalOpen(false)}
+        onSaved={() => {
+          setNewFoodModalOpen(false)
+          setSearch('')
+          reloadFoods()
+        }}
+      />
 
       {/* ─── Inline-fallback Qty Modal (only when "Sor" preset) ─── */}
       {pendingDrop && (

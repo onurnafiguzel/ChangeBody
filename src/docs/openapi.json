@@ -1950,6 +1950,89 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
           }
         }
+      },
+      "post": {
+        "tags": ["Foods"],
+        "summary": "Create a new food (Coach or Admin only)",
+        "description": "Creates a food entry. The `unit` field decides which macro group is required:\n- `unit=\"Grams\"` → `caloriesPer100g`, `proteinPer100g`, `carbsPer100g`, `fatPer100g` required; piece fields must be omitted.\n- `unit=\"Piece\"` → `caloriesPerPiece`, `proteinPerPiece`, `carbsPerPiece`, `fatPerPiece`, `pieceLabel` required (`gramsPerPiece` optional); per100g fields must be omitted.",
+        "operationId": "CreateFood",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateFoodRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Food created",
+            "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } }
+          },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — coach or admin role required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "409": { "description": "A food with the same name already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/foods/{foodId}": {
+      "get": {
+        "tags": ["Foods"],
+        "summary": "Get a food by ID",
+        "operationId": "GetFoodById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "foodId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Food retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FoodDto" } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Food not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Foods"],
+        "summary": "Update a food (Coach or Admin only)",
+        "description": "Same `unit`-conditional field rules as POST. Path `foodId` overrides the body's `foodId`.",
+        "operationId": "UpdateFood",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "foodId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateFoodRequest" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Updated" },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Food not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "409": { "description": "Another food with this name already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Foods"],
+        "summary": "Soft delete a food — sets IsActive=false (Coach or Admin only)",
+        "operationId": "DeleteFood",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "foodId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Deactivated" },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Food not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
       }
     },
     "/api/nutrition-plans": {
@@ -3385,6 +3468,39 @@
         "gramsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "example": 50, "description": "Reference weight of one piece in grams (informational only)." },
         "isActive": { "type": "boolean" }
       }
+    },
+    "CreateFoodRequest": {
+      "type": "object",
+      "required": ["name", "unit"],
+      "description": "Conditional fields based on `unit`:\n- Grams: `caloriesPer100g`, `proteinPer100g`, `carbsPer100g`, `fatPer100g` required; piece fields must be omitted.\n- Piece: `caloriesPerPiece`, `proteinPerPiece`, `carbsPerPiece`, `fatPerPiece`, `pieceLabel` required (`gramsPerPiece` optional); per-100g fields must be omitted.",
+      "properties": {
+        "name": { "type": "string", "maxLength": 200, "example": "Yulaf Ezmesi" },
+        "unit": { "type": "string", "enum": ["Grams", "Piece"] },
+        "caloriesPer100g":  { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "proteinPer100g":   { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "carbsPer100g":     { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "fatPer100g":       { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "caloriesPerPiece": { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "proteinPerPiece":  { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "carbsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "fatPerPiece":      { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+        "pieceLabel":       { "type": "string", "maxLength": 100, "nullable": true, "example": "1 dilim" },
+        "gramsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 }
+      },
+      "example": {
+        "name": "Yulaf Ezmesi",
+        "unit": "Grams",
+        "caloriesPer100g": 389,
+        "proteinPer100g": 16.9,
+        "carbsPer100g": 66.3,
+        "fatPer100g": 6.9
+      }
+    },
+    "UpdateFoodRequest": {
+      "allOf": [
+        { "$ref": "#/components/schemas/CreateFoodRequest" }
+      ],
+      "description": "Same shape as CreateFoodRequest. The path parameter `foodId` identifies the record."
     },
     "NutritionDayType": {
       "type": "string",

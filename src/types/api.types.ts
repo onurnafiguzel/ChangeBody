@@ -395,6 +395,23 @@ export interface MealItemInput {
   pieces?: number;  // unit === "Piece" ise zorunlu
 }
 
+// `unit`'e göre koşullu: Grams ise *Per100g zorunlu; Piece ise *PerPiece + pieceLabel zorunlu
+export interface CreateFoodRequest {
+  name: string;
+  unit: FoodUnit;
+  caloriesPer100g?: number | null;
+  proteinPer100g?: number | null;
+  carbsPer100g?: number | null;
+  fatPer100g?: number | null;
+  caloriesPerPiece?: number | null;
+  proteinPerPiece?: number | null;
+  carbsPerPiece?: number | null;
+  fatPerPiece?: number | null;
+  pieceLabel?: string | null;
+  gramsPerPiece?: number | null;
+}
+export type UpdateFoodRequest = CreateFoodRequest;
+
 export interface MealInput {
   name: string;
   items: MealItemInput[];
@@ -670,6 +687,7 @@ export const API_ENDPOINTS = {
 
   // Foods & Nutrition Plans
   FOODS_LIST: "/api/foods",
+  FOOD_DETAIL: (foodId: string) => `/api/foods/${foodId}`,
   NUTRITION_PLANS_CREATE: "/api/nutrition-plans",
   NUTRITION_PLAN_DETAIL: (planId: string) => `/api/nutrition-plans/${planId}`,
   NUTRITION_PLAN_ACTIVATE: (planId: string) => `/api/nutrition-plans/${planId}/activate`,
