@@ -87,6 +87,8 @@ export interface UserAssignmentDto {
   fitnessGoal?: string; // nullable
   fitnessLevel?: "Beginner" | "Intermediate" | "Advanced"; // nullable
   createdAt: string; // date-time
+  hasTrainingProgram?: boolean; // BE: true => training already assigned
+  hasNutritionPlan?: boolean;   // BE: true => nutrition plan already assigned
 }
 
 export interface CreateUserRequest {
@@ -361,6 +363,102 @@ export interface ActiveProgramDetailDto {
 }
 
 // ============================================================================
+// NUTRITION / FOOD TYPES
+// ============================================================================
+
+export type NutritionDayType = "WorkoutDay" | "OffDay";
+
+export type FoodUnit = "Grams" | "Piece";
+
+export interface FoodDto {
+  id: string;
+  name: string;
+  unit: FoodUnit;
+  // unit === "Grams" ise dolu
+  caloriesPer100g?: number | null;
+  proteinPer100g?: number | null;
+  carbsPer100g?: number | null;
+  fatPer100g?: number | null;
+  // unit === "Piece" ise dolu
+  caloriesPerPiece?: number | null;
+  proteinPerPiece?: number | null;
+  carbsPerPiece?: number | null;
+  fatPerPiece?: number | null;
+  pieceLabel?: string | null;     // "1 adet (orta)", "1 dilim"
+  gramsPerPiece?: number | null;  // bilgilendirme amaçlı
+  isActive: boolean;
+}
+
+export interface MealItemInput {
+  foodId: string;
+  grams?: number;   // unit === "Grams" ise zorunlu
+  pieces?: number;  // unit === "Piece" ise zorunlu
+}
+
+export interface MealInput {
+  name: string;
+  items: MealItemInput[];
+}
+
+export interface CreateNutritionPlanRequest {
+  userId: string;
+  title: string;
+  description?: string | null;
+  days: Partial<Record<NutritionDayType, MealInput[]>>;
+}
+
+export interface UpdateNutritionPlanRequest {
+  title: string;
+  description?: string | null;
+  days: Partial<Record<NutritionDayType, MealInput[]>>;
+}
+
+export type MealItemQuantityUnit = "g" | "adet";
+
+export interface MealItemDto {
+  foodId: string;
+  foodName: string;
+  quantity: number;
+  quantityUnit: MealItemQuantityUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface MealDto {
+  name: string;
+  items: MealItemDto[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
+export interface NutritionDayDto {
+  dayType: NutritionDayType;
+  meals: MealDto[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
+export interface NutritionPlanDetailDto {
+  id: string;
+  userId: string;
+  coachId: string;
+  coachName: string;
+  title: string;
+  description?: string | null;
+  isActive: boolean;
+  versionNumber: number;
+  createdAt: string;
+  updatedAt?: string | null;
+  days: NutritionDayDto[];
+}
+
+// ============================================================================
 // PAYMENT TYPES
 // ============================================================================
 
@@ -569,6 +667,15 @@ export const API_ENDPOINTS = {
   // Workout Sessions
   WORKOUT_SESSIONS_CREATE: "/api/workout-sessions",
   USER_WORKOUT_SESSIONS: (userId: string) => `/api/users/${userId}/workout-sessions`,
+
+  // Foods & Nutrition Plans
+  FOODS_LIST: "/api/foods",
+  NUTRITION_PLANS_CREATE: "/api/nutrition-plans",
+  NUTRITION_PLAN_DETAIL: (planId: string) => `/api/nutrition-plans/${planId}`,
+  NUTRITION_PLAN_ACTIVATE: (planId: string) => `/api/nutrition-plans/${planId}/activate`,
+  NUTRITION_PLAN_DEACTIVATE: (planId: string) => `/api/nutrition-plans/${planId}/deactivate`,
+  USER_ACTIVE_NUTRITION_PLAN: (userId: string) => `/api/users/${userId}/active-nutrition-plan`,
+  USER_NUTRITION_PLANS: (userId: string) => `/api/users/${userId}/nutrition-plans`,
 
   // Payments
   PAYMENTS_PROCESS: "/api/payments",

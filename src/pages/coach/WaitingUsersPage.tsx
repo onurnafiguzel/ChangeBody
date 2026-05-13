@@ -136,8 +136,8 @@ export default function WaitingUsersPage() {
                   key={u.id}
                   user={u}
                   onSelect={(id) => navigate(`/coach/users/${id}`)}
-                  onPrimaryAction={(id) => navigate(`/coach/programs/new/${id}`)}
-                  primaryLabel="Programa Başla →"
+                  onStartTraining={(id) => navigate(`/coach/programs/new/${id}`)}
+                  onStartNutrition={(id) => navigate(`/coach/nutrition-plans/new/${id}`)}
                 />
               ))}
             </div>

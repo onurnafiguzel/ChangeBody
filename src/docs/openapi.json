@@ -1787,16 +1787,54 @@
       "get": {
         "tags": ["Waiting Users"],
         "summary": "List all users waiting for coach assignment (Coach or Admin only)",
+        "description": "Returns users where IsWaitingForAssignment=true (at least one of training program or nutrition plan is still missing). Each item exposes `hasTrainingProgram` and `hasNutritionPlan` so the FE can show **which** program is missing and disable the corresponding write action when already assigned. Uses the `bulk-list` request timeout policy.",
         "operationId": "GetWaitingUsers",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Waiting users retrieved successfully",
+            "description": "Waiting users retrieved successfully. Each entry includes `hasTrainingProgram` and `hasNutritionPlan` flags — coach should only POST to the program endpoint(s) whose flag is `false`.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": { "$ref": "#/components/schemas/UserAssignmentDto" }
+                },
+                "examples": {
+                  "mixed": {
+                    "summary": "Two users: one needs both programs, one already has training",
+                    "value": [
+                      {
+                        "id": "11111111-1111-1111-1111-111111111111",
+                        "email": "user1@example.com",
+                        "firstName": "Ali",
+                        "lastName": "Yılmaz",
+                        "age": 28,
+                        "height": 178.5,
+                        "weight": 82.0,
+                        "gender": "Male",
+                        "fitnessGoal": "Muscle Gain",
+                        "fitnessLevel": "Intermediate",
+                        "createdAt": "2026-05-10T08:00:00Z",
+                        "hasTrainingProgram": false,
+                        "hasNutritionPlan": false
+                      },
+                      {
+                        "id": "22222222-2222-2222-2222-222222222222",
+                        "email": "user2@example.com",
+                        "firstName": "Ayşe",
+                        "lastName": "Demir",
+                        "age": 31,
+                        "height": 165.0,
+                        "weight": 60.0,
+                        "gender": "Female",
+                        "fitnessGoal": "Weight Loss",
+                        "fitnessLevel": "Beginner",
+                        "createdAt": "2026-05-12T10:30:00Z",
+                        "hasTrainingProgram": true,
+                        "hasNutritionPlan": false
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -1807,6 +1845,10 @@
           },
           "403": {
             "description": "Forbidden — coach or admin role required",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          },
+          "504": {
+            "description": "Gateway Timeout — `bulk-list` policy exceeded",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
           }
         }
@@ -1845,6 +1887,211 @@
             "description": "No waiting record found for user",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
           }
+        }
+      }
+    },
+    "/api/foods": {
+      "get": {
+        "tags": ["Foods"],
+        "summary": "List active foods (grams or piece based)",
+        "description": "Returns all active foods. The `unit` field on each item determines how macros are stored and how a meal item must reference this food:\n- `unit = \"Grams\"` → macros are populated in `*Per100g` fields; `MealItemInput.grams` is required.\n- `unit = \"Piece\"` → macros are populated in `*PerPiece` fields and `pieceLabel` describes one serving (e.g. \"1 adet\", \"1 dilim\", \"1 avuç (~25g)\"). `gramsPerPiece` is an informational reference weight. `MealItemInput.pieces` is required.\n\nThe FE should branch its quantity input UI on `unit` and use the corresponding macro group when displaying nutrition data.",
+        "operationId": "ListFoods",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Foods retrieved successfully. Each item is either grams-based or piece-based — never both.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/FoodDto" } },
+                "examples": {
+                  "mixed": {
+                    "summary": "One grams-based food (chicken) and one piece-based food (egg)",
+                    "value": [
+                      {
+                        "id": "00000000-0000-0000-0000-0000000f0001",
+                        "name": "Tavuk Göğsü",
+                        "unit": "Grams",
+                        "caloriesPer100g": 165,
+                        "proteinPer100g": 31,
+                        "carbsPer100g": 0,
+                        "fatPer100g": 3.6,
+                        "caloriesPerPiece": null,
+                        "proteinPerPiece": null,
+                        "carbsPerPiece": null,
+                        "fatPerPiece": null,
+                        "pieceLabel": null,
+                        "gramsPerPiece": null,
+                        "isActive": true
+                      },
+                      {
+                        "id": "00000000-0000-0000-0000-0000000f0007",
+                        "name": "Yumurta (bütün)",
+                        "unit": "Piece",
+                        "caloriesPer100g": null,
+                        "proteinPer100g": null,
+                        "carbsPer100g": null,
+                        "fatPer100g": null,
+                        "caloriesPerPiece": 78,
+                        "proteinPerPiece": 6.5,
+                        "carbsPerPiece": 0.5,
+                        "fatPerPiece": 5.5,
+                        "pieceLabel": "1 adet (orta)",
+                        "gramsPerPiece": 50,
+                        "isActive": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } }
+          }
+        }
+      }
+    },
+    "/api/nutrition-plans": {
+      "post": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Create a nutrition plan (Coach or Admin)",
+        "description": "Creates a nutrition plan covering one or two day types (WorkoutDay and/or OffDay). Any previously active plan for the user is automatically deactivated (single-active rule).",
+        "operationId": "CreateNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateNutritionPlanRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plan created",
+            "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — coach or admin role required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/nutrition-plans/{planId}": {
+      "get": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Get nutrition plan by ID",
+        "description": "Users can only view their own plan; coaches and admins can view any plan.",
+        "operationId": "GetNutritionPlanById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plan retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NutritionPlanDetailDto" } } }
+          },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Plan not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Update nutrition plan (Coach or Admin)",
+        "operationId": "UpdateNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateNutritionPlanRequest" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Updated" },
+          "404": { "description": "Plan not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/nutrition-plans/{planId}/activate": {
+      "post": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Activate nutrition plan (Coach or Admin)",
+        "description": "Activates the plan; any other active plans for the same user are deactivated.",
+        "operationId": "ActivateNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Activated" },
+          "404": { "description": "Plan not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/nutrition-plans/{planId}/deactivate": {
+      "post": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Deactivate nutrition plan (Coach or Admin)",
+        "operationId": "DeactivateNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "204": { "description": "Deactivated" },
+          "404": { "description": "Plan not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/active-nutrition-plan": {
+      "get": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Get user's latest active nutrition plan",
+        "description": "Returns the most recently created active plan for the user. Users may only query themselves; coaches and admins may query any user.",
+        "operationId": "GetUserActiveNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plan retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NutritionPlanDetailDto" } } }
+          },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "No active plan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/nutrition-plans": {
+      "get": {
+        "tags": ["Nutrition Plans"],
+        "summary": "List all nutrition plans (active + historical) for a user (Coach or Admin)",
+        "operationId": "GetUserNutritionPlans",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plans retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/NutritionPlanListItemDto" } }
+              }
+            }
+          },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
         }
       }
     },
@@ -2295,6 +2542,14 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "hasTrainingProgram": {
+            "type": "boolean",
+            "description": "True if a training program has already been assigned. Coach should not write another."
+          },
+          "hasNutritionPlan": {
+            "type": "boolean",
+            "description": "True if a nutrition plan has already been assigned. Coach should not write another."
           }
         }
       },
@@ -2701,7 +2956,7 @@
                 "$ref": "#/components/schemas/ProgramExerciseDetail"
               }
             }
-                    },
+          },
           "userId":     { "type": "string",  "format": "uuid" },
           "userAge":    { "type": "integer", "format": "int32", "nullable": true },
           "userHeight": { "type": "number",  "format": "decimal", "nullable": true, "description": "User height in cm" },
@@ -2851,8 +3106,10 @@
         "properties": {
           "isWaitingForAssignment": {
             "type": "boolean",
-            "description": "true = waiting for a coach to be assigned, false = already assigned"
+            "description": "true if either training or nutrition program is still missing"
           },
+          "hasTrainingProgram": { "type": "boolean" },
+          "hasNutritionPlan":  { "type": "boolean" },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -3108,6 +3365,150 @@
           }
         }
       }
+    ,
+    "FoodDto": {
+      "type": "object",
+      "description": "Food item. `unit` indicates which macro group is populated. For Grams-based foods, `*Per100g` fields are set; for Piece-based foods, `*PerPiece` + `pieceLabel` are set.",
+      "properties": {
+        "id":   { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "example": "Tavuk Göğsü" },
+        "unit": { "type": "string", "enum": ["Grams", "Piece"], "description": "Measurement basis: Grams (per 100g) or Piece (per adet)." },
+        "caloriesPer100g": { "type": "number", "format": "decimal", "nullable": true, "example": 165 },
+        "proteinPer100g":  { "type": "number", "format": "decimal", "nullable": true, "example": 31 },
+        "carbsPer100g":    { "type": "number", "format": "decimal", "nullable": true, "example": 0 },
+        "fatPer100g":      { "type": "number", "format": "decimal", "nullable": true, "example": 3.6 },
+        "caloriesPerPiece": { "type": "number", "format": "decimal", "nullable": true, "example": 78 },
+        "proteinPerPiece":  { "type": "number", "format": "decimal", "nullable": true, "example": 6.5 },
+        "carbsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "example": 0.5 },
+        "fatPerPiece":      { "type": "number", "format": "decimal", "nullable": true, "example": 5.5 },
+        "pieceLabel":       { "type": "string", "nullable": true, "example": "1 adet (orta)", "description": "Localized label for one piece (UI hint)." },
+        "gramsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "example": 50, "description": "Reference weight of one piece in grams (informational only)." },
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "NutritionDayType": {
+      "type": "string",
+      "enum": ["WorkoutDay", "OffDay"]
+    },
+    "MealItemInput": {
+      "type": "object",
+      "required": ["foodId"],
+      "description": "Exactly one of `grams` or `pieces` must be positive, matching the referenced food's `unit`. Grams-based foods accept `grams` only; Piece-based foods accept `pieces` only.",
+      "properties": {
+        "foodId": { "type": "string", "format": "uuid" },
+        "grams":  { "type": "number", "format": "decimal", "minimum": 0, "nullable": true, "example": 150, "description": "Quantity in grams. Required for Grams-based foods." },
+        "pieces": { "type": "number", "format": "decimal", "minimum": 0, "nullable": true, "example": 2,   "description": "Quantity in pieces (adet). Required for Piece-based foods." }
+      }
+    },
+    "MealInput": {
+      "type": "object",
+      "required": ["name", "items"],
+      "properties": {
+        "name": { "type": "string", "example": "Breakfast" },
+        "items": { "type": "array", "items": { "$ref": "#/components/schemas/MealItemInput" } }
+      }
+    },
+    "CreateNutritionPlanRequest": {
+      "type": "object",
+      "required": ["userId", "title", "days"],
+      "properties": {
+        "userId": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "maxLength": 200, "example": "Cutting Plan - Week 1" },
+        "description": { "type": "string", "maxLength": 1000, "nullable": true },
+        "days": {
+          "type": "object",
+          "description": "Dictionary keyed by NutritionDayType (WorkoutDay / OffDay). One or two entries required.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MealInput" }
+          },
+          "example": {
+            "WorkoutDay": [
+              { "name": "Breakfast", "items": [ { "foodId": "00000000-0000-0000-0000-0000000F0005", "grams": 100 } ] }
+            ],
+            "OffDay": [
+              { "name": "Lunch", "items": [ { "foodId": "00000000-0000-0000-0000-0000000F0001", "grams": 200 } ] }
+            ]
+          }
+        }
+      }
+    },
+    "UpdateNutritionPlanRequest": {
+      "type": "object",
+      "required": ["title", "days"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000, "nullable": true },
+        "days": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MealInput" }
+          }
+        }
+      }
+    },
+    "MealItemDto": {
+      "type": "object",
+      "properties": {
+        "foodId":       { "type": "string", "format": "uuid" },
+        "foodName":     { "type": "string" },
+        "quantity":     { "type": "number", "format": "decimal", "description": "Amount expressed in `quantityUnit`." },
+        "quantityUnit": { "type": "string", "enum": ["g", "adet"], "description": "Unit of the `quantity` field; 'g' for grams or 'adet' for pieces." },
+        "calories":     { "type": "number", "format": "decimal" },
+        "protein":      { "type": "number", "format": "decimal" },
+        "carbs":        { "type": "number", "format": "decimal" },
+        "fat":          { "type": "number", "format": "decimal" }
+      }
+    },
+    "MealDto": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/components/schemas/MealItemDto" } },
+        "totalCalories": { "type": "number", "format": "decimal" },
+        "totalProtein": { "type": "number", "format": "decimal" },
+        "totalCarbs": { "type": "number", "format": "decimal" },
+        "totalFat": { "type": "number", "format": "decimal" }
+      }
+    },
+    "NutritionDayDto": {
+      "type": "object",
+      "properties": {
+        "dayType": { "$ref": "#/components/schemas/NutritionDayType" },
+        "meals": { "type": "array", "items": { "$ref": "#/components/schemas/MealDto" } },
+        "totalCalories": { "type": "number", "format": "decimal" },
+        "totalProtein": { "type": "number", "format": "decimal" },
+        "totalCarbs": { "type": "number", "format": "decimal" },
+        "totalFat": { "type": "number", "format": "decimal" }
+      }
+    },
+    "NutritionPlanDetailDto": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "userId": { "type": "string", "format": "uuid" },
+        "coachId": { "type": "string", "format": "uuid" },
+        "coachName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string", "nullable": true },
+        "isActive": { "type": "boolean" },
+        "versionNumber": { "type": "integer", "format": "int32" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time", "nullable": true },
+        "days": { "type": "array", "items": { "$ref": "#/components/schemas/NutritionDayDto" } }
+      }
+    },
+    "NutritionPlanListItemDto": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "coachName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
     },
     "securitySchemes": {
       "bearerAuth": {

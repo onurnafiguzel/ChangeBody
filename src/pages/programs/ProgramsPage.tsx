@@ -4,10 +4,16 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserActiveProgram, getWaitingUserStatus } from '../../services/users'
 import { getExercises } from '../../services/exercises'
+import { getUserActiveNutritionPlan } from '../../services/nutritionPlans'
 import { getStoredUser } from '../../services/auth'
 import { parseApiError } from '../../utils/errorHandler'
 import { MUSCLE_TR, DIFFICULTY_TR, MUSCLE_ICONS } from '../../components/exercises/ExerciseCard'
-import type { ActiveProgramDetailDto, ExerciseDto } from '../../types/api.types'
+import type {
+  ActiveProgramDetailDto,
+  ExerciseDto,
+  NutritionPlanDetailDto,
+  NutritionDayType,
+} from '../../types/api.types'
 import '../../styles/dashboard.css'
 import '../../styles/exercises.css'
 
@@ -22,6 +28,23 @@ const WEEKDAY_ORDER: Record<string, number> = {
 const DAY_TR: Record<string, string> = {
   Monday: 'Pazartesi', Tuesday: 'Salı', Wednesday: 'Çarşamba',
   Thursday: 'Perşembe', Friday: 'Cuma', Saturday: 'Cumartesi', Sunday: 'Pazar',
+}
+
+const NUTRITION_DAY_TR: Record<NutritionDayType, string> = {
+  WorkoutDay: 'Antrenman Günü',
+  OffDay: 'Dinlenme Günü',
+}
+const NUTRITION_DAY_ICON: Record<NutritionDayType, string> = {
+  WorkoutDay: '💪',
+  OffDay: '🛌',
+}
+
+function fmtNum(n: number): string {
+  return n >= 100 ? Math.round(n).toString() : (Math.round(n * 10) / 10).toString()
+}
+
+function is404(err: unknown): boolean {
+  return (err as { response?: { status?: number } })?.response?.status === 404
 }
 
 function dayOrder(key: string): number {
@@ -47,11 +70,13 @@ export default function ProgramsPage() {
   const user = getStoredUser()
 
   const [program, setProgram] = useState<ActiveProgramDetailDto | null>(null)
+  const [nutritionPlan, setNutritionPlan] = useState<NutritionPlanDetailDto | null>(null)
   const [exerciseMap, setExerciseMap] = useState<Map<string, ExerciseDto>>(new Map())
   const [selected, setSelected] = useState<ExerciseDto | null>(null)
   const [isWaiting, setIsWaiting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training')
 
   useEffect(() => {
     fetchData()
@@ -74,22 +99,49 @@ export default function ProgramsPage() {
     setError(null)
     setIsWaiting(false)
     try {
-      const [p, exResult] = await Promise.all([
+      const [programRes, nutritionRes, exercisesRes] = await Promise.allSettled([
         getUserActiveProgram(user.userId),
+        getUserActiveNutritionPlan(user.userId),
         getExercises({ page: 1, pageSize: 200 }),
       ])
-      setProgram(p)
-      setExerciseMap(new Map(exResult.exercises.map((e) => [e.id, e])))
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 404) {
+
+      // Training program — 404 boş demek; diğer hatalar global hata
+      let hasProgram = false
+      if (programRes.status === 'fulfilled') {
+        setProgram(programRes.value)
+        hasProgram = true
+      } else if (is404(programRes.reason)) {
         setProgram(null)
+      } else {
+        throw programRes.reason
+      }
+
+      // Nutrition plan — 404 boş demek; diğer hatalar tüm sayfayı bozmasın, sessizce geçilir
+      let hasNutrition = false
+      if (nutritionRes.status === 'fulfilled') {
+        setNutritionPlan(nutritionRes.value)
+        hasNutrition = true
+      } else {
+        setNutritionPlan(null)
+      }
+
+      // Aktif sekme seçimi: antrenman yoksa beslenmeye düş
+      if (!hasProgram && hasNutrition) setActiveTab('nutrition')
+      else setActiveTab('training')
+
+      if (exercisesRes.status === 'fulfilled') {
+        setExerciseMap(new Map(exercisesRes.value.exercises.map((e) => [e.id, e])))
+      }
+
+      // Hiçbiri yoksa "bekliyor mu" durumunu sorgula
+      const noProgram = programRes.status !== 'fulfilled'
+      const noNutrition = nutritionRes.status !== 'fulfilled'
+      if (noProgram && noNutrition) {
         const ws = await getWaitingUserStatus(user.userId).catch(() => null)
         setIsWaiting(ws?.isWaitingForAssignment === true)
-        // 404 dahi olsa egzersiz lookup'ı yine de güzel olur ama programsız anlamsız — geç
-      } else {
-        setError(parseApiError(err, 'Program bilgisi yüklenemedi.'))
       }
+    } catch (err: unknown) {
+      setError(parseApiError(err, 'Program bilgisi yüklenemedi.'))
     } finally {
       setLoading(false)
     }
@@ -133,8 +185,8 @@ export default function ProgramsPage() {
     )
   }
 
-  // ─── Empty (404) ──────────────────────────────────────────────────────
-  if (!program) {
+  // ─── Empty (her ikisi de yok) ─────────────────────────────────────────
+  if (!program && !nutritionPlan) {
     return (
       <div className="app-shell">
         <Sidebar />
@@ -148,7 +200,7 @@ export default function ProgramsPage() {
                   <div className="placeholder-icon">⏳</div>
                   <h3 className="placeholder-title">Ödemeniz başarıyla alındı!</h3>
                   <p className="placeholder-desc">
-                    Koçunuz en kısa sürede size özel bir antrenman programı hazırlayacak.
+                    Koçunuz en kısa sürede size özel bir antrenman ve beslenme programı hazırlayacak.
                   </p>
                 </>
               ) : (
@@ -174,7 +226,9 @@ export default function ProgramsPage() {
   }
 
   // ─── Program Detail ───────────────────────────────────────────────────
-  const sortedDays = Object.entries(program.dailyExercises ?? {}).sort(([a], [b]) => dayOrder(a) - dayOrder(b))
+  const sortedDays = program
+    ? Object.entries(program.dailyExercises ?? {}).sort(([a], [b]) => dayOrder(a) - dayOrder(b))
+    : []
 
   return (
     <div className="app-shell">
@@ -186,6 +240,68 @@ export default function ProgramsPage() {
             <span className="section-title">Programlarım</span>
           </div>
 
+          {/* ─── Özet Bandı ─── */}
+          <div className="programs-summary-bar">
+            <button
+              type="button"
+              className={`programs-summary-chip ${activeTab === 'training' ? 'active' : ''} ${!program ? 'muted' : ''}`}
+              onClick={() => setActiveTab('training')}
+            >
+              <span className="programs-summary-icon">🏋️</span>
+              <div className="programs-summary-text">
+                <div className="programs-summary-label">Antrenman</div>
+                <div className="programs-summary-value">
+                  {program ? program.name : 'Henüz yok'}
+                </div>
+                {program && (
+                  <div className="programs-summary-sub">
+                    {sortedDays.length} gün · {program.durationWeeks} hafta
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`programs-summary-chip ${activeTab === 'nutrition' ? 'active' : ''} ${!nutritionPlan ? 'muted' : ''}`}
+              onClick={() => setActiveTab('nutrition')}
+            >
+              <span className="programs-summary-icon">🥗</span>
+              <div className="programs-summary-text">
+                <div className="programs-summary-label">Beslenme</div>
+                <div className="programs-summary-value">
+                  {nutritionPlan ? nutritionPlan.title : 'Henüz yok'}
+                </div>
+                {nutritionPlan && (
+                  <div className="programs-summary-sub">
+                    {Math.round(nutritionPlan.days[0]?.totalCalories ?? 0)} kcal/gün ·{' '}
+                    {nutritionPlan.days.length === 2 ? 'Antrenman + Off' : 'Tek gün'}
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* ─── Tab Bar ─── */}
+          <div className="programs-tabs">
+            <button
+              type="button"
+              className={`programs-tab ${activeTab === 'training' ? 'active' : ''}`}
+              onClick={() => setActiveTab('training')}
+            >
+              🏋️ Antrenman
+            </button>
+            <button
+              type="button"
+              className={`programs-tab ${activeTab === 'nutrition' ? 'active' : ''}`}
+              onClick={() => setActiveTab('nutrition')}
+            >
+              🥗 Beslenme
+            </button>
+          </div>
+
+          {/* ─── Antrenman Programı ─── */}
+          {activeTab === 'training' && (program ? (
+          <>
           {/* Header Block */}
           <div className="program-card">
             <div className="program-card-header">
@@ -291,6 +407,113 @@ export default function ProgramsPage() {
               </div>
             )}
           </div>
+          </>
+          ) : (
+            <div className="profile-edit-section">
+              <div className="profile-edit-section-title">🏋️ Antrenman Programım</div>
+              <p className="placeholder-desc" style={{ margin: 0 }}>
+                Henüz aktif bir antrenman programın yok. Koçun en kısa sürede program hazırlayacak.
+              </p>
+            </div>
+          ))}
+
+          {/* ─── Beslenme Programı ─── */}
+          {activeTab === 'nutrition' && (nutritionPlan ? (
+            <div className="profile-edit-section">
+              <div className="profile-edit-section-title">
+                🥗 Beslenme Programım — {nutritionPlan.title}
+              </div>
+              <div className="profile-summary-grid" style={{ marginBottom: 12 }}>
+                <div className="profile-summary-item">
+                  <span className="profile-summary-label">Antrenör</span>
+                  <span className="profile-summary-value">{nutritionPlan.coachName}</span>
+                </div>
+                <div className="profile-summary-item">
+                  <span className="profile-summary-label">Başlangıç</span>
+                  <span className="profile-summary-value">{formatDate(nutritionPlan.createdAt)}</span>
+                </div>
+                {nutritionPlan.description && (
+                  <div className="profile-summary-item full">
+                    <span className="profile-summary-label">Açıklama</span>
+                    <span className="profile-summary-value">{nutritionPlan.description}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="np-days-grid" data-cols={nutritionPlan.days.length}>
+                {nutritionPlan.days.map((d) => (
+                  <div key={d.dayType} className="np-day-card">
+                    <div className="np-day-header">
+                      <span className="np-day-icon">{NUTRITION_DAY_ICON[d.dayType]}</span>
+                      <span className="np-day-title">{NUTRITION_DAY_TR[d.dayType]}</span>
+                    </div>
+
+                    <div className="np-meals">
+                      {d.meals.map((meal, mi) => (
+                        <div key={`${d.dayType}-${mi}`} className="np-meal-card readonly">
+                          <div className="np-meal-head">
+                            <span className="np-meal-name" style={{ pointerEvents: 'none' }}>
+                              {meal.name}
+                            </span>
+                          </div>
+
+                          {meal.items.length === 0 ? (
+                            <div className="day-column-empty">Bu öğünde besin yok</div>
+                          ) : (
+                            <ul className="np-item-list">
+                              {meal.items.map((it, ii) => (
+                                <li key={`${d.dayType}-${mi}-${ii}`} className="np-item-row">
+                                  <div className="np-item-text">
+                                    <strong>{it.foodName}</strong>
+                                    <div className="np-item-macros">
+                                      <span className="macro-kcal">{fmtNum(it.calories)} kcal</span>
+                                      <span className="macro-p">{fmtNum(it.protein)}P</span>
+                                      <span className="macro-c">{fmtNum(it.carbs)}C</span>
+                                      <span className="macro-f">{fmtNum(it.fat)}F</span>
+                                    </div>
+                                  </div>
+                                  <div className="np-item-grams">
+                                    <span>{fmtNum(it.quantity)} {it.quantityUnit}</span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {meal.items.length > 0 && (
+                            <div className="np-meal-subtotal">
+                              Ara toplam ·{' '}
+                              <span className="macro-kcal">{fmtNum(meal.totalCalories)} kcal</span>{' '}
+                              · <span className="macro-p">{fmtNum(meal.totalProtein)}P</span>{' '}
+                              · <span className="macro-c">{fmtNum(meal.totalCarbs)}C</span>{' '}
+                              · <span className="macro-f">{fmtNum(meal.totalFat)}F</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="np-day-total">
+                      <div className="np-day-total-label">Günlük Toplam</div>
+                      <div className="np-day-total-row">
+                        <span className="np-day-total-kcal">{fmtNum(d.totalCalories)} kcal</span>
+                        <span className="macro-p">{fmtNum(d.totalProtein)}P</span>
+                        <span className="macro-c">{fmtNum(d.totalCarbs)}C</span>
+                        <span className="macro-f">{fmtNum(d.totalFat)}F</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="profile-edit-section">
+              <div className="profile-edit-section-title">🥗 Beslenme Programım</div>
+              <p className="placeholder-desc" style={{ margin: 0 }}>
+                Henüz aktif bir beslenme programın yok. Koçun en kısa sürede program hazırlayacak.
+              </p>
+            </div>
+          ))}
         </div>
         <BottomNav />
       </div>
