@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import ExerciseCard from '../../components/exercises/ExerciseCard'
@@ -15,22 +15,60 @@ const PAGE_SIZE = 20
 
 export default function ExercisesPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const user = getStoredUser()
 
   const [exercises, setExercises] = useState<ExerciseDto[]>([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState<number>(() => {
+    const p = parseInt(searchParams.get('page') ?? '1', 10)
+    return Number.isFinite(p) && p > 0 ? p : 1
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<ExerciseDto | null>(null)
 
-  const [filters, setFilters] = useState<FilterState>({
-    search: '', muscleGroup: '', difficultyLevel: '',
-  })
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    search: searchParams.get('search') ?? '',
+    muscleGroup: searchParams.get('muscleGroup') ?? '',
+    difficultyLevel: searchParams.get('difficultyLevel') ?? '',
+  }))
   const [muscleGroups, setMuscleGroups] = useState<string[]>([])
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // URL ↔ state senkronizasyonu (state → URL). Boş alanlar URL'de görünmesin.
+  useEffect(() => {
+    const next = new URLSearchParams()
+    if (page > 1) next.set('page', String(page))
+    if (filters.search) next.set('search', filters.search)
+    if (filters.muscleGroup) next.set('muscleGroup', filters.muscleGroup)
+    if (filters.difficultyLevel) next.set('difficultyLevel', filters.difficultyLevel)
+    // String karşılaştırması — gereksiz history entry'sini engeller
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filters.search, filters.muscleGroup, filters.difficultyLevel])
+
+  // URL → state (tarayıcı geri/ileri butonları için). Pop'ta state'i URL'den oku.
+  useEffect(() => {
+    const urlPage = parseInt(searchParams.get('page') ?? '1', 10)
+    const validPage = Number.isFinite(urlPage) && urlPage > 0 ? urlPage : 1
+    const urlSearch = searchParams.get('search') ?? ''
+    const urlMuscle = searchParams.get('muscleGroup') ?? ''
+    const urlDifficulty = searchParams.get('difficultyLevel') ?? ''
+    if (validPage !== page) setPage(validPage)
+    if (
+      urlSearch !== filters.search ||
+      urlMuscle !== filters.muscleGroup ||
+      urlDifficulty !== filters.difficultyLevel
+    ) {
+      setFilters({ search: urlSearch, muscleGroup: urlMuscle, difficultyLevel: urlDifficulty })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // Mount'ta TEK istek — user her render'da yeni object literal döndüğü için [user] dep'i sonsuz tekrara yol açıyordu.
   useEffect(() => {
