@@ -3546,7 +3546,24 @@
         "profile":               { "$ref": "#/components/schemas/UserDashboardProfileDto" },
         "activeTrainingProgram": { "allOf": [{ "$ref": "#/components/schemas/ActiveProgramDetailDto" }], "nullable": true },
         "activeNutritionPlan":   { "allOf": [{ "$ref": "#/components/schemas/NutritionPlanDetailDto" }], "nullable": true },
-        "waitingStatus":         { "allOf": [{ "$ref": "#/components/schemas/WaitingUserStatusDto" }], "nullable": true }
+        "waitingStatus":         { "allOf": [{ "$ref": "#/components/schemas/WaitingUserStatusDto" }], "nullable": true },
+        "packageProgress":       { "allOf": [{ "$ref": "#/components/schemas/PackageProgressDto" }], "nullable": true, "description": "Active package window + progress percentage. Null if user has no active (non-expired) completed payment." }
+      }
+    },
+    "PackageProgressDto": {
+      "type": "object",
+      "description": "Time-based progress for an active package purchase. `progressPercentage` is `(now - startDate) / (endDate - startDate) * 100`, clamped to 0..100.",
+      "properties": {
+        "paymentId":          { "type": "string", "format": "uuid" },
+        "packageId":          { "type": "string", "format": "uuid" },
+        "packageName":        { "type": "string" },
+        "startDate":          { "type": "string", "format": "date-time" },
+        "endDate":            { "type": "string", "format": "date-time" },
+        "totalDays":          { "type": "integer", "format": "int32", "description": "Whole days in the package window." },
+        "elapsedDays":        { "type": "integer", "format": "int32", "description": "Whole days elapsed since startDate (floor)." },
+        "remainingDays":      { "type": "integer", "format": "int32" },
+        "progressPercentage": { "type": "number",  "format": "decimal", "minimum": 0, "maximum": 100, "example": 42.86 },
+        "isExpired":          { "type": "boolean" }
       }
     },
     "UserDashboardProfileDto": {

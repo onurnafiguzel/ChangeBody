@@ -402,11 +402,25 @@ export interface UserDashboardProfileDto {
   isCompletedProfile: boolean;
 }
 
+export interface PackageProgressDto {
+  paymentId: string;
+  packageId: string;
+  packageName: string;
+  startDate: string;        // ISO date-time
+  endDate: string;          // ISO date-time
+  totalDays: number;
+  elapsedDays: number;
+  remainingDays: number;
+  progressPercentage: number; // 0..100, BE clamped
+  isExpired: boolean;
+}
+
 export interface UserDashboardDto {
   profile: UserDashboardProfileDto;
   activeTrainingProgram?: ActiveProgramDetailDto | null;
   activeNutritionPlan?: NutritionPlanDetailDto | null;
   waitingStatus?: WaitingUserStatusDto | null;
+  packageProgress?: PackageProgressDto | null;
 }
 
 // ============================================================================

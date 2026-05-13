@@ -10,6 +10,7 @@ import { parseApiError } from '../../utils/errorHandler'
 import type {
   ActiveProgramDetailDto,
   NutritionPlanDetailDto,
+  PackageProgressDto,
   UserDashboardDto,
   UserDashboardProfileDto,
   WaitingUserStatusDto,
@@ -40,6 +41,10 @@ const DIFFICULTY_TR: Record<string, string> = {
 
 function fmtNum(n: number): string {
   return n >= 100 ? Math.round(n).toString() : (Math.round(n * 10) / 10).toString()
+}
+
+function fmtShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export default function Dashboard() {
@@ -79,6 +84,14 @@ export default function Dashboard() {
           </div>
 
           {error && <div className="error-banner">⚠️ {error}</div>}
+
+          {/* Paket İlerleme */}
+          {data?.packageProgress && (
+            <PackageProgressBanner
+              progress={data.packageProgress}
+              onBuy={() => navigate('/packages')}
+            />
+          )}
 
           {/* Profil + Durum */}
           <div className="section-header">
@@ -145,6 +158,56 @@ export default function Dashboard() {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────
+
+function PackageProgressBanner({
+  progress,
+  onBuy,
+}: { progress: PackageProgressDto; onBuy: () => void }) {
+  if (progress.isExpired) {
+    return (
+      <div className="package-progress-banner expired">
+        <div className="package-progress-header">
+          <span className="package-progress-title">⚠️ Paketinin süresi doldu</span>
+        </div>
+        <p className="package-progress-meta">
+          {progress.packageName} — {Math.abs(progress.remainingDays)} gün önce bitti.
+        </p>
+        <button className="btn-primary" onClick={onBuy} style={{ marginTop: 10 }}>
+          Yeni Paket Satın Al →
+        </button>
+      </div>
+    )
+  }
+
+  const pct = Math.max(0, Math.min(100, progress.progressPercentage))
+  const variant = progress.remainingDays <= 7
+    ? (progress.remainingDays <= 1 ? 'critical' : 'warning')
+    : 'normal'
+  const remainingLabel = progress.remainingDays <= 0
+    ? 'Bugün son gün'
+    : `${progress.remainingDays} gün kaldı`
+
+  return (
+    <div className={`package-progress-banner ${variant}`}>
+      <div className="package-progress-header">
+        <span className="package-progress-title">📦 Aktif Paket: {progress.packageName}</span>
+        <span className="package-progress-remaining">⏳ {remainingLabel}</span>
+      </div>
+      <div className="package-progress-bar">
+        <div className="package-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="package-progress-meta">
+        Başlangıç: {fmtShortDate(progress.startDate)} · Bitiş: {fmtShortDate(progress.endDate)}
+        {' · '}{progress.elapsedDays}/{progress.totalDays} gün geçti
+      </p>
+      {variant !== 'normal' && (
+        <p className="package-progress-warn">
+          {variant === 'critical' ? '🚨 Bugün son gün — yenilemeyi unutma.' : '⚠️ Yenileme zamanı yaklaşıyor.'}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function ProfileCard({ profile, onEdit }: { profile: UserDashboardProfileDto; onEdit: () => void }) {
   const bmi = profile.height && profile.weight
