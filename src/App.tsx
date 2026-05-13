@@ -20,6 +20,7 @@ import ScheduleBuilderPage from './pages/coach/ScheduleBuilderPage'
 import CreateNutritionPlanPage from './pages/coach/CreateNutritionPlanPage'
 import MealBuilderPage from './pages/coach/MealBuilderPage'
 import FoodLibraryPage from './pages/coach/FoodLibraryPage'
+import FitnessGoalsPage from './pages/coach/FitnessGoalsPage'
 import CoachProfilePage from './pages/coach/CoachProfilePage'
 import CoachProfileEditPage from './pages/coach/CoachProfileEditPage'
 import AccessDenied from './pages/AccessDenied'
@@ -201,6 +202,10 @@ export default function App() {
         <Route
           path="/coach/foods"
           element={<RequireRole role="Coach"><FoodLibraryPage /></RequireRole>}
+        />
+        <Route
+          path="/coach/fitness-goals"
+          element={<RequireRole role="Coach"><FitnessGoalsPage /></RequireRole>}
         />
         <Route
           path="/coach/nutrition-plans/new/:userId"

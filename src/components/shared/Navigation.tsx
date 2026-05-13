@@ -21,6 +21,7 @@ const COACH_NAV: NavItem[] = [
   { path: '/coach/waiting-users', icon: '⏳', label: 'Bekleyenler' },
   { path: '/coach/programs', icon: '📋', label: 'Programlarım' },
   { path: '/coach/foods', icon: '🥗', label: 'Besinler' },
+  { path: '/coach/fitness-goals', icon: '🎯', label: 'Hedefler' },
   { path: '/coach/profile', icon: '👤', label: 'Profil' },
 ]
 

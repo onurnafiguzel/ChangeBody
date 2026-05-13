@@ -2151,3 +2151,15 @@
   font-size: 0.85rem;
   color: var(--text);
 }
+
+/* Fitness goal description clamp */
+.goal-description {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
