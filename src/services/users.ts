@@ -1,5 +1,5 @@
 import api from './api'
-import type { UserDto, CompleteProfileRequest, UpdateUserRequest, ChangePasswordRequest, ActiveProgramDetailDto, WaitingUserStatusDto, FitnessGoalDto } from '../types/api.types'
+import type { UserDto, UserDashboardDto, CompleteProfileRequest, UpdateUserRequest, ChangePasswordRequest, ActiveProgramDetailDto, WaitingUserStatusDto, FitnessGoalDto } from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
 
 export async function getUserProfile(userId: string): Promise<UserDto> {
@@ -37,6 +37,11 @@ export async function getWaitingUserStatus(userId: string): Promise<WaitingUserS
 
 export async function getFitnessGoals(): Promise<FitnessGoalDto[]> {
   const { data } = await api.get<FitnessGoalDto[]>(API_ENDPOINTS.FITNESS_GOALS_LIST)
+  return data
+}
+
+export async function getUserDashboard(userId: string): Promise<UserDashboardDto> {
+  const { data } = await api.get<UserDashboardDto>(API_ENDPOINTS.USER_DASHBOARD(userId))
   return data
 }
 

@@ -1,5 +1,11 @@
 import api from './api'
-import type { CoachDto, CoachProgramListItemDto, UpdateCoachRequest, ChangePasswordRequest } from '../types/api.types'
+import type {
+  CoachDashboardDto,
+  CoachDto,
+  CoachProgramListItemDto,
+  UpdateCoachRequest,
+  ChangePasswordRequest,
+} from '../types/api.types'
 import { API_ENDPOINTS } from '../types/api.types'
 
 export async function getCoachProfile(coachId: string): Promise<CoachDto> {
@@ -17,5 +23,10 @@ export async function changeCoachPassword(coachId: string, payload: ChangePasswo
 
 export async function getCoachPrograms(coachId: string): Promise<CoachProgramListItemDto[]> {
   const { data } = await api.get<CoachProgramListItemDto[]>(API_ENDPOINTS.COACH_PROGRAMS_LIST(coachId))
+  return data
+}
+
+export async function getCoachDashboard(coachId: string): Promise<CoachDashboardDto> {
+  const { data } = await api.get<CoachDashboardDto>(API_ENDPOINTS.COACH_DASHBOARD(coachId))
   return data
 }

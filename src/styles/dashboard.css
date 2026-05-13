@@ -2256,3 +2256,140 @@
   background: var(--surface-2);
 }
 .schedule-day-block.open .schedule-day-title { color: var(--text); }
+
+/* ─── CoachDashboard: KPI tıklanabilir varyantı ─── */
+.kpi-card.clickable {
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-align: center;
+  transition: border-color 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+.kpi-card.clickable:hover { border-color: var(--accent); transform: translateY(-1px); }
+.kpi-card.clickable:active { transform: translateY(0); }
+
+/* ─── Atanan Sporcular listesi ─── */
+.assigned-users-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assigned-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.assigned-user-name {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assigned-user-name:hover { color: var(--accent); }
+.assigned-user-badges { display: flex; gap: 6px; flex-shrink: 0; }
+.assigned-user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.assigned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.assigned-badge.has {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.assigned-badge.missing {
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--accent);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+@media (max-width: 720px) {
+  .assigned-user-row { flex-wrap: wrap; }
+  .assigned-user-actions { width: 100%; }
+}
+
+/* ─── User Dashboard summary cards ─── */
+.dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 720px) {
+  .dashboard-summary-grid { grid-template-columns: 1fr; }
+}
+.dashboard-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.dashboard-summary-card-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.dashboard-summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.dashboard-summary-rows .muted { color: var(--text-muted); margin-right: 6px; }
+
+.dashboard-status-text {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.dashboard-status-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.program-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.dashboard-macro-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+  align-items: center;
+}
+.dashboard-macro-row .muted { color: var(--text-muted); font-size: 0.78rem; }

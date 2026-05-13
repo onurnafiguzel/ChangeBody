@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
-import WaitingUserCard from '../../components/cards/WaitingUserCard'
+import Skeleton from '../../components/shared/Skeleton'
 import { getStoredUser } from '../../services/auth'
-import { getWaitingUsers } from '../../services/waitingUsers'
-import { getCoachProfile, getCoachPrograms } from '../../services/coach'
+import { getCoachDashboard } from '../../services/coach'
 import { parseApiError } from '../../utils/errorHandler'
-import type { CoachDto, CoachProgramListItemDto, UserAssignmentDto } from '../../types/api.types'
+import type {
+  CoachDashboardDto,
+  CoachDashboardAssignedUserDto,
+  CoachProgramListItemDto,
+} from '../../types/api.types'
 import '../../styles/dashboard.css'
 
-const PREVIEW_LIMIT = 3
 const GENDER_TR: Record<string, string> = { Male: 'Erkek', Female: 'Kadın', Other: 'Diğer' }
 
 function userMetaText(p: CoachProgramListItemDto): string {
@@ -24,32 +26,23 @@ export default function CoachDashboard() {
   const navigate = useNavigate()
   const user = getStoredUser()
 
-  const [coach, setCoach] = useState<CoachDto | null>(null)
-  const [waiting, setWaiting] = useState<UserAssignmentDto[]>([])
-  const [programs, setPrograms] = useState<CoachProgramListItemDto[]>([])
+  const [data, setData] = useState<CoachDashboardDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user?.userId) return
-    Promise.all([
-      getCoachProfile(user.userId).catch(() => null),
-      getWaitingUsers().catch(() => [] as UserAssignmentDto[]),
-      getCoachPrograms(user.userId).catch(() => [] as CoachProgramListItemDto[]),
-    ])
-      .then(([c, w, p]) => {
-        setCoach(c)
-        setWaiting(w)
-        setPrograms(p)
-      })
-      .catch((err) => setError(parseApiError(err, 'Bilgiler yüklenemedi.')))
+    getCoachDashboard(user.userId)
+      .then(setData)
+      .catch((err) => setError(parseApiError(err, 'Dashboard yüklenemedi.')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const greeting = coach ? `${coach.firstName} ${coach.lastName}` : (user?.email?.split('@')[0] ?? 'Antrenör')
-  const activePrograms = programs.filter((p) => !p.isCompleted)
-  const completedPrograms = programs.filter((p) => p.isCompleted)
+  const greeting = data
+    ? `${data.coach.firstName} ${data.coach.lastName}`
+    : (user?.email?.split('@')[0] ?? 'Antrenör')
+  const specialization = data?.coach.specialization
 
   return (
     <div className="app-shell">
@@ -57,14 +50,12 @@ export default function CoachDashboard() {
       <div className="app-main">
         <Header />
         <div className="page-content">
-          {/* Welcome Banner */}
+          {/* Welcome */}
           <div className="welcome-banner">
             <div className="welcome-banner-label">Hoş Geldin</div>
             <div className="welcome-banner-title">Merhaba, Antrenör {greeting} 👋</div>
             <div className="welcome-banner-sub">
-              {waiting.length > 0
-                ? `${waiting.length} sporcu seni bekliyor.`
-                : 'Şu an bekleyen sporcu yok.'}
+              {specialization ? `Uzmanlık: ${specialization}` : 'Bugün de sporcularına ilham ver!'}
             </div>
           </div>
 
@@ -74,72 +65,55 @@ export default function CoachDashboard() {
           <div className="section-header">
             <span className="section-title">Özet</span>
           </div>
-          <div className="kpi-grid">
-            <div className="kpi-card">
-              <span className="kpi-icon">⏳</span>
-              <span className="kpi-value">{loading ? '—' : waiting.length}</span>
-              <span className="kpi-label">Bekleyen</span>
-            </div>
-            <div className="kpi-card">
-              <span className="kpi-icon">📋</span>
-              <span className="kpi-value">{loading ? '—' : activePrograms.length}</span>
-              <span className="kpi-label">Aktif Program</span>
-            </div>
-            <div className="kpi-card">
-              <span className="kpi-icon">✅</span>
-              <span className="kpi-value">{loading ? '—' : completedPrograms.length}</span>
-              <span className="kpi-label">Tamamlanan</span>
-            </div>
-          </div>
-
-          {/* Waiting Users Preview */}
-          <div className="section-header">
-            <span className="section-title">Bekleyen Sporcular</span>
-            {waiting.length > PREVIEW_LIMIT && (
-              <button className="btn-link" onClick={() => navigate('/coach/waiting-users')}>
-                Tümünü Gör →
-              </button>
-            )}
-          </div>
           {loading ? (
-            <div className="skeleton skeleton-card" style={{ height: 100 }} />
-          ) : waiting.length === 0 ? (
-            <div className="placeholder-card" style={{ padding: '24px 16px' }}>
-              <div className="placeholder-icon">⏳</div>
-              <p className="placeholder-desc">Şu an bekleyen sporcu bulunmuyor.</p>
+            <div className="kpi-grid">
+              <Skeleton variant="card" height={110} />
+              <Skeleton variant="card" height={110} />
+              <Skeleton variant="card" height={110} />
             </div>
-          ) : (
-            <div className="card-list">
-              {waiting.slice(0, PREVIEW_LIMIT).map((u) => (
-                <WaitingUserCard
-                  key={u.id}
-                  user={u}
-                  compact
-                  onSelect={(id) => navigate(`/coach/users/${id}`)}
-                />
-              ))}
+          ) : data ? (
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <span className="kpi-icon">👥</span>
+                <span className="kpi-value">{data.assignedUserCount}</span>
+                <span className="kpi-label">Atanan Sporcu</span>
+              </div>
+              <div className="kpi-card">
+                <span className="kpi-icon">🏋️</span>
+                <span className="kpi-value">{data.activeProgramCount}</span>
+                <span className="kpi-label">Aktif Program</span>
+              </div>
+              <button
+                type="button"
+                className="kpi-card clickable"
+                onClick={() => navigate('/coach/waiting-users')}
+              >
+                <span className="kpi-icon">⏳</span>
+                <span className="kpi-value">{data.pendingWaitingUserCount}</span>
+                <span className="kpi-label">Bekleyen →</span>
+              </button>
             </div>
-          )}
+          ) : null}
 
-          {/* Active Programs Preview */}
+          {/* Recent Active Programs */}
           <div className="section-header">
-            <span className="section-title">Aktif Programlarım</span>
-            {activePrograms.length > PREVIEW_LIMIT && (
+            <span className="section-title">Son Aktif Programlar</span>
+            {data && data.recentPrograms.length > 0 && (
               <button className="btn-link" onClick={() => navigate('/coach/programs')}>
                 Tümünü Gör →
               </button>
             )}
           </div>
           {loading ? (
-            <div className="skeleton skeleton-card" style={{ height: 100 }} />
-          ) : activePrograms.length === 0 ? (
+            <Skeleton variant="card" height={120} />
+          ) : !data || data.recentPrograms.length === 0 ? (
             <div className="placeholder-card" style={{ padding: '24px 16px' }}>
               <div className="placeholder-icon">📋</div>
               <p className="placeholder-desc">Henüz aktif programın yok.</p>
             </div>
           ) : (
             <div className="card-list">
-              {activePrograms.slice(0, PREVIEW_LIMIT).map((p) => {
+              {data.recentPrograms.map((p) => {
                 const progress = Math.max(0, Math.min(100, Math.round(p.progressPercentage)))
                 const meta = userMetaText(p)
                 return (
@@ -168,9 +142,79 @@ export default function CoachDashboard() {
               })}
             </div>
           )}
+
+          {/* Assigned Users */}
+          <div className="section-header">
+            <span className="section-title">Atanan Sporcular</span>
+          </div>
+          {loading ? (
+            <Skeleton variant="row" count={3} />
+          ) : !data || data.assignedUsers.length === 0 ? (
+            <div className="placeholder-card" style={{ padding: '24px 16px' }}>
+              <div className="placeholder-icon">👥</div>
+              <p className="placeholder-desc">Henüz atanmış sporcun yok.</p>
+            </div>
+          ) : (
+            <ul className="assigned-users-list">
+              {data.assignedUsers.map((u) => (
+                <AssignedUserRow
+                  key={u.userId}
+                  user={u}
+                  onOpen={(id) => navigate(`/coach/users/${id}`)}
+                  onCreateTraining={(id) => navigate(`/coach/programs/new/${id}`)}
+                  onCreateNutrition={(id) => navigate(`/coach/nutrition-plans/new/${id}`)}
+                />
+              ))}
+            </ul>
+          )}
         </div>
         <BottomNav />
       </div>
     </div>
+  )
+}
+
+interface AssignedUserRowProps {
+  user: CoachDashboardAssignedUserDto
+  onOpen: (id: string) => void
+  onCreateTraining: (id: string) => void
+  onCreateNutrition: (id: string) => void
+}
+
+function AssignedUserRow({ user, onOpen, onCreateTraining, onCreateNutrition }: AssignedUserRowProps) {
+  return (
+    <li className="assigned-user-row">
+      <button className="assigned-user-name" onClick={() => onOpen(user.userId)}>
+        👤 {user.fullName}
+      </button>
+      <div className="assigned-user-badges">
+        <span className={`assigned-badge ${user.hasTrainingProgram ? 'has' : 'missing'}`}>
+          🏋️ {user.hasTrainingProgram ? '✓' : '✗'}
+        </span>
+        <span className={`assigned-badge ${user.hasNutritionPlan ? 'has' : 'missing'}`}>
+          🥗 {user.hasNutritionPlan ? '✓' : '✗'}
+        </span>
+      </div>
+      <div className="assigned-user-actions">
+        {!user.hasTrainingProgram && (
+          <button
+            type="button"
+            className="food-card-action"
+            onClick={() => onCreateTraining(user.userId)}
+          >
+            🏋️ Programa Başla →
+          </button>
+        )}
+        {!user.hasNutritionPlan && (
+          <button
+            type="button"
+            className="food-card-action"
+            onClick={() => onCreateNutrition(user.userId)}
+          >
+            🥗 Beslenmeye Başla →
+          </button>
+        )}
+      </div>
+    </li>
   )
 }

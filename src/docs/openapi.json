@@ -734,6 +734,48 @@
         }
       }
     },
+    "/api/coaches/{coachId}/dashboard": {
+      "get": {
+        "tags": ["Coaches"],
+        "summary": "Coach dashboard (owning Coach or Admin)",
+        "description": "Aggregate view: coach summary, assigned user count, active program count, pending waiting-user count (global), recent active programs (last 5), and per-user `HasTrainingProgram` / `HasNutritionPlan` breakdown.",
+        "operationId": "GetCoachDashboard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "coachId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CoachDashboardDto" } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — coach can only view own dashboard", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Coach not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/dashboard": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "User dashboard (own user, or Coach/Admin)",
+        "description": "Aggregate view: profile, active training program, active nutrition plan, and waiting status (with `hasTrainingProgram` / `hasNutritionPlan` flags). Users may only query their own dashboard; Coach and Admin may query any user.",
+        "operationId": "GetUserDashboard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard retrieved",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserDashboardDto" } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — users can only view their own dashboard", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
     "/api/coaches/{coachId}/programs": {
       "get": {
         "tags": ["Coaches"],
@@ -3467,6 +3509,59 @@
         "pieceLabel":       { "type": "string", "nullable": true, "example": "1 adet (orta)", "description": "Localized label for one piece (UI hint)." },
         "gramsPerPiece":    { "type": "number", "format": "decimal", "nullable": true, "example": 50, "description": "Reference weight of one piece in grams (informational only)." },
         "isActive": { "type": "boolean" }
+      }
+    },
+    "CoachDashboardDto": {
+      "type": "object",
+      "properties": {
+        "coach": { "$ref": "#/components/schemas/CoachSummaryDto" },
+        "assignedUserCount":       { "type": "integer", "format": "int32" },
+        "activeProgramCount":      { "type": "integer", "format": "int32" },
+        "pendingWaitingUserCount": { "type": "integer", "format": "int32" },
+        "recentPrograms": { "type": "array", "items": { "$ref": "#/components/schemas/CoachProgramListItemDto" } },
+        "assignedUsers":  { "type": "array", "items": { "$ref": "#/components/schemas/CoachDashboardAssignedUserDto" } }
+      }
+    },
+    "CoachSummaryDto": {
+      "type": "object",
+      "properties": {
+        "id":        { "type": "string", "format": "uuid" },
+        "firstName": { "type": "string" },
+        "lastName":  { "type": "string" },
+        "specialization": { "type": "string", "nullable": true }
+      }
+    },
+    "CoachDashboardAssignedUserDto": {
+      "type": "object",
+      "properties": {
+        "userId":             { "type": "string", "format": "uuid" },
+        "fullName":           { "type": "string" },
+        "hasTrainingProgram": { "type": "boolean" },
+        "hasNutritionPlan":   { "type": "boolean" }
+      }
+    },
+    "UserDashboardDto": {
+      "type": "object",
+      "properties": {
+        "profile":               { "$ref": "#/components/schemas/UserDashboardProfileDto" },
+        "activeTrainingProgram": { "allOf": [{ "$ref": "#/components/schemas/ActiveProgramDetailDto" }], "nullable": true },
+        "activeNutritionPlan":   { "allOf": [{ "$ref": "#/components/schemas/NutritionPlanDetailDto" }], "nullable": true },
+        "waitingStatus":         { "allOf": [{ "$ref": "#/components/schemas/WaitingUserStatusDto" }], "nullable": true }
+      }
+    },
+    "UserDashboardProfileDto": {
+      "type": "object",
+      "properties": {
+        "id":                 { "type": "string", "format": "uuid" },
+        "email":              { "type": "string", "format": "email" },
+        "firstName":          { "type": "string" },
+        "lastName":           { "type": "string" },
+        "age":                { "type": "integer", "format": "int32", "nullable": true },
+        "height":             { "type": "number",  "format": "decimal", "nullable": true },
+        "weight":             { "type": "number",  "format": "decimal", "nullable": true },
+        "gender":             { "type": "string", "nullable": true, "enum": ["Male", "Female", "Other", null] },
+        "fitnessLevel":       { "type": "string", "nullable": true, "enum": ["Beginner", "Intermediate", "Advanced", null] },
+        "isCompletedProfile": { "type": "boolean" }
       }
     },
     "CreateFoodRequest": {

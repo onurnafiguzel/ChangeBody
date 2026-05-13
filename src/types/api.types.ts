@@ -363,6 +363,53 @@ export interface ActiveProgramDetailDto {
 }
 
 // ============================================================================
+// DASHBOARD AGGREGATE TYPES
+// ============================================================================
+
+export interface CoachSummaryDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialization?: string | null;
+}
+
+export interface CoachDashboardAssignedUserDto {
+  userId: string;
+  fullName: string;
+  hasTrainingProgram: boolean;
+  hasNutritionPlan: boolean;
+}
+
+export interface CoachDashboardDto {
+  coach: CoachSummaryDto;
+  assignedUserCount: number;
+  activeProgramCount: number;
+  pendingWaitingUserCount: number;
+  recentPrograms: CoachProgramListItemDto[];
+  assignedUsers: CoachDashboardAssignedUserDto[];
+}
+
+export interface UserDashboardProfileDto {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  age?: number | null;
+  height?: number | null;
+  weight?: number | null;
+  gender?: "Male" | "Female" | "Other" | null;
+  fitnessLevel?: "Beginner" | "Intermediate" | "Advanced" | null;
+  isCompletedProfile: boolean;
+}
+
+export interface UserDashboardDto {
+  profile: UserDashboardProfileDto;
+  activeTrainingProgram?: ActiveProgramDetailDto | null;
+  activeNutritionPlan?: NutritionPlanDetailDto | null;
+  waitingStatus?: WaitingUserStatusDto | null;
+}
+
+// ============================================================================
 // NUTRITION / FOOD TYPES
 // ============================================================================
 
@@ -519,6 +566,8 @@ export interface PaymentDto {
 export interface WaitingUserStatusDto {
   isWaitingForAssignment: boolean;
   createdAt: string; // date-time
+  hasTrainingProgram?: boolean; // BE: dashboard aggregate response'unda geliyor
+  hasNutritionPlan?: boolean;
 }
 
 // ============================================================================
@@ -655,6 +704,7 @@ export const API_ENDPOINTS = {
   USER_CHANGE_PASSWORD: (userId: string) => `/api/users/${userId}/change-password`,
   USERS_WAITING: "/api/users/waiting",
   USER_ACTIVE_PROGRAM: (userId: string) => `/api/users/${userId}/active-program`,
+  USER_DASHBOARD: (userId: string) => `/api/users/${userId}/dashboard`,
 
   // Coaches
   COACHES_LIST: "/api/coaches",
@@ -663,6 +713,7 @@ export const API_ENDPOINTS = {
   COACH_UPDATE: (coachId: string) => `/api/coaches/${coachId}`,
   COACH_CHANGE_PASSWORD: (coachId: string) => `/api/coaches/${coachId}/change-password`,
   COACH_PROGRAMS_LIST: (coachId: string) => `/api/coaches/${coachId}/programs`,
+  COACH_DASHBOARD: (coachId: string) => `/api/coaches/${coachId}/dashboard`,
 
   // Exercises
   EXERCISES_LIST: "/api/exercises",
