@@ -11,6 +11,12 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  // FormData isteklerinde Content-Type'ı temizle — axios doğru boundary'li
+  // multipart/form-data header'ını otomatik üretsin.
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete (config.headers as Record<string, unknown>)['Content-Type']
+    delete (config.headers as Record<string, unknown>)['content-type']
+  }
   return config
 })
 

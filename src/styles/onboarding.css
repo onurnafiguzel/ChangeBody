@@ -534,3 +534,135 @@
   flex-shrink: 0;
 }
 .ob-radio-item:not(.selected) .ob-radio-dot { color: var(--text-muted); }
+
+/* ─── Step 5 — Vücut Fotoğrafları ─── */
+.ob-privacy-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.ob-privacy-note strong { color: var(--text); }
+
+.ob-photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 480px) {
+  .ob-photo-grid { grid-template-columns: 1fr; }
+}
+
+.ob-photo-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface-2);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  min-height: 220px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ob-photo-slot:hover { border-color: var(--accent); }
+.ob-photo-slot.filled {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.ob-photo-slot.error { border-color: #ef4444; }
+
+.ob-photo-slot-thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.ob-photo-slot-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.ob-photo-slot-help {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.ob-photo-slot-error {
+  font-size: 0.78rem;
+  color: #ef4444;
+  text-align: center;
+  margin-top: 4px;
+}
+.ob-photo-slot-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ob-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+.ob-btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ob-photo-actions {
+  display: flex;
+  gap: 6px;
+}
+.ob-photo-actions button {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.ob-photo-actions button:hover { border-color: var(--accent); }
+.ob-photo-actions button.danger { color: #ef4444; }
+.ob-photo-actions button.danger:hover { border-color: #ef4444; }
+
+.ob-tips-card {
+  background: rgba(249, 115, 22, 0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.ob-tips-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.ob-tips-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}

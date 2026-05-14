@@ -5,6 +5,7 @@ import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { createTrainingProgram } from '../../services/training'
 import { getUserProfile } from '../../services/users'
 import AthleteProfileSummary from '../../components/coach/AthleteProfileSummary'
+import UserPhotosGrid from '../../components/shared/UserPhotosGrid'
 import Skeleton from '../../components/shared/Skeleton'
 import { getStoredUser } from '../../services/auth'
 import { breakdownApiError, parseApiError } from '../../utils/errorHandler'
@@ -120,7 +121,10 @@ export default function CreateProgramPage() {
           {globalError && <div className="error-banner">⚠️ {globalError}</div>}
 
           {athlete ? (
-            <AthleteProfileSummary user={athlete} />
+            <>
+              <AthleteProfileSummary user={athlete} />
+              <UserPhotosGrid userId={athlete.id} />
+            </>
           ) : (
             <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
           )}

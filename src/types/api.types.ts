@@ -57,6 +57,18 @@ export interface CompleteProfileRequest {
   wantsSupplementSupport?: boolean | null;
 }
 
+export type PhotoViewType = "Front" | "Back" | "Left" | "Right";
+
+export interface UserPhotoDto {
+  id: string;
+  userId: string;
+  viewType: PhotoViewType;
+  imageUrl: string;   // BE: relative path (e.g. "/uploads/photos/.../front/xxx.jpg"); BASE_URL ile birleştirilmeli
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 export interface UserHealthBlockDto {
   dailyWorkLifestyle?: string | null;
   gymDaysPerWeek?: number | null;
@@ -739,6 +751,7 @@ export const API_ENDPOINTS = {
   USERS_WAITING: "/api/users/waiting",
   USER_ACTIVE_PROGRAM: (userId: string) => `/api/users/${userId}/active-program`,
   USER_DASHBOARD: (userId: string) => `/api/users/${userId}/dashboard`,
+  USER_PHOTOS: (userId: string) => `/api/users/${userId}/photos`,
 
   // Coaches
   COACHES_LIST: "/api/coaches",

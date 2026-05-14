@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { CompleteProfileRequest, FitnessGoalDto } from '../../types/api.types'
+import type { CompleteProfileRequest, FitnessGoalDto, PhotoViewType } from '../../types/api.types'
 import { completeProfile, getFitnessGoals, getUserProfile } from '../../services/users'
+import { uploadUserPhotos } from '../../services/userPhotos'
 import { getStoredUser } from '../../services/auth'
 import { parseApiError } from '../../utils/errorHandler'
+import PhotoUploadSlot from '../../components/onboarding/PhotoUploadSlot'
 import '../../styles/onboarding.css'
+
+interface PhotoFiles {
+  Front: File | null
+  Back: File | null
+  Left: File | null
+  Right: File | null
+}
 
 // ─── Icon Mapping ───────────────────────────────────────────────────────────
 
@@ -125,7 +134,11 @@ export default function ProfileCompletion() {
   const navigate = useNavigate()
   const user = getStoredUser()
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [photos, setPhotos] = useState<PhotoFiles>({
+    Front: null, Back: null, Left: null, Right: null,
+  })
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null)
   const [form, setForm] = useState<Partial<CompleteProfileRequest>>({})
   const [errors, setErrors] = useState<FormErrors>({})
   const [globalError, setGlobalError] = useState<string | null>(null)
@@ -181,27 +194,55 @@ export default function ProfileCompletion() {
     const errs =
       step === 1 ? validateStep1(form) :
       step === 2 ? validateStep2(form) :
-      step === 3 ? validateStep3(form) : {}
+      step === 3 ? validateStep3(form) :
+      step === 4 ? validateStep4(form) : {}
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    setStep((s) => (s < 4 ? ((s + 1) as 2 | 3 | 4) : s))
+    setStep((s) => (s < 5 ? ((s + 1) as 2 | 3 | 4 | 5) : s))
   }
 
   function goBack() {
     setErrors({})
-    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : s))
+  }
+
+  const photosReady = !!(photos.Front && photos.Back && photos.Left && photos.Right)
+
+  function setPhoto(view: PhotoViewType, file: File | null) {
+    setPhotos((prev) => ({ ...prev, [view]: file }))
+    setPhotoWarning(null)
   }
 
   async function handleSubmit() {
-    const errs = validateStep4(form)
-    if (Object.keys(errs).length) { setErrors(errs); return }
+    if (!photosReady) {
+      setGlobalError('Lütfen 4 fotoğrafı da seçin.')
+      return
+    }
     if (!user?.userId) { navigate('/login'); return }
 
     setLoading(true)
     setGlobalError(null)
+    setPhotoWarning(null)
     try {
+      // 1) Profil kaydı
       await completeProfile(user.userId, buildPayload(form))
-      navigate('/dashboard')
+      // 2) Fotoğraflar
+      try {
+        await uploadUserPhotos(user.userId, {
+          front: photos.Front!,
+          back: photos.Back!,
+          left: photos.Left!,
+          right: photos.Right!,
+        })
+        navigate('/dashboard')
+      } catch (photoErr: unknown) {
+        const status = (photoErr as { response?: { status?: number } })?.response?.status
+        // Profil zaten kaydedildi — kullanıcıya bunu anlat, kaybı engelle
+        if (status === 401) { navigate('/login'); return }
+        setPhotoWarning(
+          parseApiError(photoErr, 'Profil kaydedildi ama fotoğraflar yüklenemedi. Dashboard üzerinden tekrar deneyebilirsin.'),
+        )
+      }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status: number } }
       if (axiosErr?.response?.status === 401) {
@@ -223,17 +264,17 @@ export default function ProfileCompletion() {
 
         {/* ── Progress ── */}
         <div className="ob-steps">
-          {([1, 2, 3, 4] as const).map((n, i) => (
+          {([1, 2, 3, 4, 5] as const).map((n, i) => (
             <>
               <div key={n} className={`ob-step ${step === n ? 'active' : step > n ? 'done' : ''}`}>
                 <div className="ob-step-dot">
                   {step > n ? '✓' : n}
                 </div>
                 <div className="ob-step-label">
-                  {n === 1 ? 'Kişisel' : n === 2 ? 'Vücut' : n === 3 ? 'Hedef' : 'Sağlık'}
+                  {n === 1 ? 'Kişisel' : n === 2 ? 'Vücut' : n === 3 ? 'Hedef' : n === 4 ? 'Sağlık' : 'Fotoğraf'}
                 </div>
               </div>
-              {i < 3 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
+              {i < 4 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
             </>
           ))}
         </div>
@@ -548,19 +589,76 @@ export default function ProfileCompletion() {
           </>
         )}
 
+        {/* ══════════════════════════════════════════ STEP 5 — Vücut Fotoğrafları */}
+        {step === 5 && (
+          <>
+            <div className="ob-step-header">
+              <div className="ob-step-icon">📷</div>
+              <div className="ob-step-title">Vücut Fotoğrafları</div>
+              <div className="ob-step-desc">
+                Koçunun seni daha iyi tanıması için 4 farklı yönden fotoğraf çek.
+              </div>
+            </div>
+
+            <div className="ob-privacy-note">
+              🔒 <strong>Gizlilik:</strong> Bu fotoğrafları yalnızca atandığın koç ve sen görebilirsin.
+            </div>
+
+            <div className="ob-photo-grid">
+              {(['Front', 'Back', 'Left', 'Right'] as const).map((v) => (
+                <PhotoUploadSlot
+                  key={v}
+                  view={v}
+                  file={photos[v]}
+                  onChange={(f) => setPhoto(v, f)}
+                />
+              ))}
+            </div>
+
+            <div className="ob-tips-card">
+              <div className="ob-tips-title">💡 Daha iyi fotoğraflar için ipuçları</div>
+              <ul className="ob-tips-list">
+                <li>Düz ve sade arka plan (beyaz duvar idealdir)</li>
+                <li>Doğal ışık veya iyi aydınlatılmış oda</li>
+                <li>Kollar yanda, doğal duruş</li>
+                <li>Yakın takip eden kıyafet (spor şort/tişört)</li>
+                <li>Telefon göz hizasında, 2-3 metre uzaklıkta</li>
+              </ul>
+            </div>
+
+            {photoWarning && (
+              <div className="error-banner" style={{ marginBottom: 12 }}>
+                ⚠️ {photoWarning}
+                <button
+                  className="ob-btn-back"
+                  style={{ marginLeft: 12 }}
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Dashboard'a Git
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
         {/* ── Nav ── */}
         <div className="ob-nav">
           {step > 1 && (
-            <button className="ob-btn-back" onClick={goBack}>← Geri</button>
+            <button className="ob-btn-back" onClick={goBack} disabled={loading}>← Geri</button>
           )}
-          {step < 4 ? (
+          {step < 5 ? (
             <button className="ob-btn-next" onClick={goNext}>
               Devam Et →
             </button>
           ) : (
-            <button className="ob-btn-next" onClick={handleSubmit} disabled={loading}>
+            <button
+              className="ob-btn-next"
+              onClick={handleSubmit}
+              disabled={loading || !photosReady}
+              title={!photosReady ? '4 fotoğrafı da seçmelisin' : undefined}
+            >
               {loading && <span className="loading-spinner" />}
-              {loading ? 'Kaydediliyor...' : 'Profili Tamamla ✓'}
+              {loading ? 'Yükleniyor...' : 'Tamamla & Yükle ✓'}
             </button>
           )}
         </div>

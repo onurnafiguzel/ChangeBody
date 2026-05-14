@@ -537,6 +537,67 @@
         }
       }
     },
+    "/api/users/{userId}/photos": {
+      "post": {
+        "tags": ["User Photos"],
+        "summary": "Upload (or replace) the 4 body photos (Front/Back/Left/Right). Owner only.",
+        "description": "**ZORUNLU: `Content-Type` `multipart/form-data` olmalıdır** — JSON body kabul edilmez.\n\nİstek 4 dosya alanı içerir: `front`, `back`, `left`, `right`. Her biri PNG veya JPEG, ≤10 MB. Aynı user için ikinci yükleme önceki 4 fotoğrafı tamamen değiştirir.\n\n### Browser / Axios / Fetch örneği\n\n```js\nconst form = new FormData();\nform.append('front', frontFile);   // <input type=\"file\"> veya Blob\nform.append('back',  backFile);\nform.append('left',  leftFile);\nform.append('right', rightFile);\n\nawait fetch(`/api/users/${userId}/photos`, {\n  method: 'POST',\n  headers: { Authorization: `Bearer ${token}` }, // Content-Type SET ETMEYİN!\n  body: form\n});\n```\n\n> **Yaygın hata:** `Content-Type: application/json` + `JSON.stringify({front:file,...})` → File objeleri boş `{}`'e dönüşür ve 400 alırsınız.\n\n### curl örneği\n\n```bash\ncurl -X POST 'http://localhost:5000/api/users/{userId}/photos' \\\n  -H 'Authorization: Bearer <jwt>' \\\n  -F 'front=@front.png' \\\n  -F 'back=@back.png' \\\n  -F 'left=@left.png' \\\n  -F 'right=@right.png'\n```\n\nRaw HTTP gövdesinde her dosya kendi `Content-Disposition: form-data; name=\"front\"; filename=\"front.png\"` + `Content-Type: image/png` parçası olarak gönderilir.",
+        "operationId": "UploadUserPhotos",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["front", "back", "left", "right"],
+                "properties": {
+                  "front": { "type": "string", "format": "binary", "description": "Önden çekilmiş vücut fotoğrafı (PNG/JPEG, ≤10 MB)" },
+                  "back":  { "type": "string", "format": "binary", "description": "Arkadan çekilmiş vücut fotoğrafı (PNG/JPEG, ≤10 MB)" },
+                  "left":  { "type": "string", "format": "binary", "description": "Sol yandan çekilmiş vücut fotoğrafı (PNG/JPEG, ≤10 MB)" },
+                  "right": { "type": "string", "format": "binary", "description": "Sağ yandan çekilmiş vücut fotoğrafı (PNG/JPEG, ≤10 MB)" }
+                }
+              },
+              "encoding": {
+                "front": { "contentType": "image/png, image/jpeg" },
+                "back":  { "contentType": "image/png, image/jpeg" },
+                "left":  { "contentType": "image/png, image/jpeg" },
+                "right": { "contentType": "image/png, image/jpeg" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Uploaded photos",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/UserPhotoDto" } } } }
+          },
+          "400": { "description": "Validation error (missing file, unsupported type, too large)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — only the user themselves may upload", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "get": {
+        "tags": ["User Photos"],
+        "summary": "List the user's body photos. Owner, Coach, or Admin.",
+        "operationId": "GetUserPhotos",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photos retrieved (ordered by ViewType)",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/UserPhotoDto" } } } }
+          },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
     "/api/coaches": {
       "get": {
         "tags": ["Coaches"],
@@ -2599,6 +2660,20 @@
             "allOf": [{ "$ref": "#/components/schemas/UserHealthBlockDto" }],
             "nullable": true
           }
+        }
+      },
+      "PhotoViewType": {
+        "type": "string",
+        "enum": ["Front", "Back", "Left", "Right"]
+      },
+      "UserPhotoDto": {
+        "type": "object",
+        "properties": {
+          "id":         { "type": "string", "format": "uuid" },
+          "userId":     { "type": "string", "format": "uuid" },
+          "imageUrl":   { "type": "string", "example": "/uploads/photos/{userId}/front/abc.png", "description": "Path served by API static files (relative). FE builds full URL with API origin." },
+          "viewType":   { "$ref": "#/components/schemas/PhotoViewType" },
+          "uploadedAt": { "type": "string", "format": "date-time" }
         }
       },
       "UserHealthBlockDto": {

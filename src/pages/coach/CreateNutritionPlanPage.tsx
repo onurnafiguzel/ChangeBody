@@ -4,6 +4,7 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserProfile } from '../../services/users'
 import AthleteProfileSummary from '../../components/coach/AthleteProfileSummary'
+import UserPhotosGrid from '../../components/shared/UserPhotosGrid'
 import Skeleton from '../../components/shared/Skeleton'
 import { useToast } from '../../components/shared/Toast'
 import type { UserDto } from '../../types/api.types'
@@ -76,7 +77,10 @@ export default function CreateNutritionPlanPage() {
           </div>
 
           {athlete ? (
-            <AthleteProfileSummary user={athlete} />
+            <>
+              <AthleteProfileSummary user={athlete} />
+              <UserPhotosGrid userId={athlete.id} />
+            </>
           ) : (
             <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
           )}
