@@ -76,7 +76,7 @@ function validateStep2(f: Partial<CompleteProfileRequest>): FormErrors {
 
 function validateStep3(f: Partial<CompleteProfileRequest>): FormErrors {
   const e: FormErrors = {}
-  if (!f.fitnessGoal)  e.fitnessGoal  = 'Bir hedef seçiniz.'
+  if (!f.fitnessGoalId)  e.fitnessGoalId  = 'Bir hedef seçiniz.'
   if (!f.fitnessLevel) e.fitnessLevel = 'Bir seviye seçiniz.'
   return e
 }
@@ -333,7 +333,7 @@ export default function ProfileCompletion() {
             <div className="ob-label" style={{ marginBottom: 8 }}>Fitness Hedefi</div>
             {goalsError && <div className="global-error" style={{ marginBottom: 12 }}>⚠️ {goalsError}</div>}
             {goalsLoading ? (
-              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoal ? 4 : 20 }}>
+              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoalId ? 4 : 20 }}>
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="skeleton" style={{ height: '100px', borderRadius: '12px' }} />
                 ))}
@@ -343,12 +343,12 @@ export default function ProfileCompletion() {
                 Hedef seçenekleri yüklenemedi
               </div>
             ) : (
-              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoal ? 4 : 20 }}>
+              <div className="ob-card-grid" style={{ marginBottom: errors.fitnessGoalId ? 4 : 20 }}>
                 {goals.map((g) => (
                   <div
                     key={g.id}
-                    className={`ob-goal-card ${form.fitnessGoal === g.id ? 'selected' : ''}`}
-                    onClick={() => set('fitnessGoal', g.id)}
+                    className={`ob-goal-card ${form.fitnessGoalId === g.id ? 'selected' : ''}`}
+                    onClick={() => set('fitnessGoalId', g.id)}
                   >
                     <span className="ob-goal-card-icon">{getGoalIcon(g.name)}</span>
                     <span className="ob-goal-card-name">{g.name}</span>
@@ -357,7 +357,7 @@ export default function ProfileCompletion() {
                 ))}
               </div>
             )}
-            {errors.fitnessGoal && <span className="ob-field-error" style={{ display: 'block', marginBottom: 12 }}>{errors.fitnessGoal}</span>}
+            {errors.fitnessGoalId && <span className="ob-field-error" style={{ display: 'block', marginBottom: 12 }}>{errors.fitnessGoalId}</span>}
 
             <div className="ob-label" style={{ marginBottom: 8 }}>Fitness Seviyesi</div>
             <div className="ob-level-cards">

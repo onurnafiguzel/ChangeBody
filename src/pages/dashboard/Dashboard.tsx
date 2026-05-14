@@ -124,6 +124,7 @@ export default function Dashboard() {
           ) : (
             <TrainingSummaryCard
               program={data?.activeTrainingProgram ?? null}
+              hasActivePackage={!!data?.packageProgress && !data.packageProgress.isExpired}
               onPackages={() => navigate('/packages')}
             />
           )}
@@ -293,16 +294,29 @@ function StatusCard({
 
 function TrainingSummaryCard({
   program,
+  hasActivePackage,
   onPackages,
-}: { program: ActiveProgramDetailDto | null; onPackages: () => void }) {
+}: {
+  program: ActiveProgramDetailDto | null
+  hasActivePackage: boolean
+  onPackages: () => void
+}) {
   if (!program) {
     return (
       <div className="placeholder-card" style={{ padding: '24px 16px' }}>
         <div className="placeholder-icon">🏋️</div>
-        <p className="placeholder-desc">Henüz aktif bir antrenman programın yok.</p>
-        <button className="btn-link" style={{ marginTop: 8 }} onClick={onPackages}>
-          Paket Satın Al →
-        </button>
+        {hasActivePackage ? (
+          <p className="placeholder-desc">
+            Koçun antrenman programını hazırlıyor. Hazır olduğunda burada görünecek.
+          </p>
+        ) : (
+          <>
+            <p className="placeholder-desc">Henüz aktif bir antrenman programın yok.</p>
+            <button className="btn-link" style={{ marginTop: 8 }} onClick={onPackages}>
+              Paket Satın Al →
+            </button>
+          </>
+        )}
       </div>
     )
   }
