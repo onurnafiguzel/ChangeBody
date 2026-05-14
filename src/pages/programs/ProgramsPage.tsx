@@ -4,8 +4,10 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserActiveProgram, getWaitingUserStatus } from '../../services/users'
 import { getExercises } from '../../services/exercises'
+import { exportTrainingProgram } from '../../services/training'
 import { getUserActiveNutritionPlan } from '../../services/nutritionPlans'
 import { getStoredUser } from '../../services/auth'
+import { useToast } from '../../components/shared/Toast'
 import { parseApiError } from '../../utils/errorHandler'
 import { MUSCLE_TR, DIFFICULTY_TR, MUSCLE_ICONS } from '../../components/exercises/ExerciseCard'
 import ScheduleView from '../../components/programs/ScheduleView'
@@ -66,6 +68,28 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training')
+  const [exporting, setExporting] = useState(false)
+  const toast = useToast()
+
+  async function handleExportExcel() {
+    if (!program || exporting) return
+    setExporting(true)
+    try {
+      const blob = await exportTrainingProgram(program.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${program.name || 'antrenman-programi'}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Excel indirilemedi. Lütfen tekrar deneyin.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   useEffect(() => {
     fetchData()
@@ -298,9 +322,20 @@ export default function ProgramsPage() {
                 <div className="program-card-title">{program.name}</div>
                 <div className="program-card-coach">Antrenör: {program.coachName}</div>
               </div>
-              <span className={`program-status-badge ${program.status === 'InProgress' ? 'in-progress' : 'completed'}`}>
-                {program.status === 'InProgress' ? 'Devam Ediyor' : 'Tamamlandı'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleExportExcel}
+                  disabled={exporting}
+                  title="Programı Excel olarak indir"
+                >
+                  {exporting ? '⏳ Hazırlanıyor…' : '📥 Excel'}
+                </button>
+                <span className={`program-status-badge ${program.status === 'InProgress' ? 'in-progress' : 'completed'}`}>
+                  {program.status === 'InProgress' ? 'Devam Ediyor' : 'Tamamlandı'}
+                </span>
+              </div>
             </div>
 
             <span className={`program-difficulty-badge ${program.difficulty.toLowerCase()}`}>

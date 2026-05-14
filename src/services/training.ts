@@ -12,6 +12,14 @@ export async function getTrainingProgram(programId: string): Promise<ActiveProgr
   return data
 }
 
+export async function exportTrainingProgram(programId: string): Promise<Blob> {
+  const { data } = await api.get<Blob>(
+    `${API_ENDPOINTS.PROGRAM_DETAIL(programId)}/export`,
+    { responseType: 'blob' },
+  )
+  return data
+}
+
 export async function createTrainingProgram(payload: CreateTrainingProgramRequest): Promise<string> {
   // BE response: oluşturulan programın UUID'si (raw string)
   const { data } = await api.post<string>(API_ENDPOINTS.PROGRAMS_CREATE, payload)

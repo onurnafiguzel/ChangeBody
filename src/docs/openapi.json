@@ -1610,6 +1610,48 @@
         }
       }
     },
+    "/api/training-programs/{id}/export": {
+      "get": {
+        "tags": ["Training Programs"],
+        "summary": "Export training program as Excel (.xlsx)",
+        "description": "Returns the program plan and full workout history as an .xlsx file. Each program day is rendered on its own sheet.",
+        "operationId": "ExportTrainingProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel file stream",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Training program not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/training-programs/{id}/activate": {
       "post": {
         "tags": ["Training Programs"],
