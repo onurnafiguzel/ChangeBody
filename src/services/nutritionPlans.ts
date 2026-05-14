@@ -37,6 +37,14 @@ export async function getUserActiveNutritionPlan(userId: string): Promise<Nutrit
   return data
 }
 
+export async function exportUserActiveNutritionPlan(userId: string): Promise<Blob> {
+  const { data } = await api.get<Blob>(
+    `${API_ENDPOINTS.USER_ACTIVE_NUTRITION_PLAN(userId)}/export`,
+    { responseType: 'blob' },
+  )
+  return data
+}
+
 export async function getUserNutritionPlans(userId: string): Promise<NutritionPlanListItemDto[]> {
   const { data } = await api.get<NutritionPlanListItemDto[]>(API_ENDPOINTS.USER_NUTRITION_PLANS(userId))
   return data

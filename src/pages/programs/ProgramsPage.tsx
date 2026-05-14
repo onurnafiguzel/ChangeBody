@@ -5,7 +5,7 @@ import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserActiveProgram, getWaitingUserStatus } from '../../services/users'
 import { getExercises } from '../../services/exercises'
 import { exportTrainingProgram } from '../../services/training'
-import { getUserActiveNutritionPlan } from '../../services/nutritionPlans'
+import { exportUserActiveNutritionPlan, getUserActiveNutritionPlan } from '../../services/nutritionPlans'
 import { getStoredUser } from '../../services/auth'
 import { useToast } from '../../components/shared/Toast'
 import { parseApiError } from '../../utils/errorHandler'
@@ -69,7 +69,28 @@ export default function ProgramsPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training')
   const [exporting, setExporting] = useState(false)
+  const [exportingNutrition, setExportingNutrition] = useState(false)
   const toast = useToast()
+
+  async function handleExportNutritionExcel() {
+    if (!nutritionPlan || !user?.userId || exportingNutrition) return
+    setExportingNutrition(true)
+    try {
+      const blob = await exportUserActiveNutritionPlan(user.userId)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${nutritionPlan.title || 'beslenme-plani'}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Excel indirilemedi. Lütfen tekrar deneyin.')
+    } finally {
+      setExportingNutrition(false)
+    }
+  }
 
   async function handleExportExcel() {
     if (!program || exporting) return
@@ -395,8 +416,17 @@ export default function ProgramsPage() {
           {/* ─── Beslenme Programı ─── */}
           {activeTab === 'nutrition' && (nutritionPlan ? (
             <div className="profile-edit-section">
-              <div className="profile-edit-section-title">
-                🥗 Beslenme Programım — {nutritionPlan.title}
+              <div className="profile-edit-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span>🥗 Beslenme Programım — {nutritionPlan.title}</span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleExportNutritionExcel}
+                  disabled={exportingNutrition}
+                  title="Beslenme planını Excel olarak indir"
+                >
+                  {exportingNutrition ? '⏳ Hazırlanıyor…' : '📥 Excel'}
+                </button>
               </div>
               <div className="profile-summary-grid" style={{ marginBottom: 12 }}>
                 <div className="profile-summary-item">
