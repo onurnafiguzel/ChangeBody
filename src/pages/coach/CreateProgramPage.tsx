@@ -4,6 +4,8 @@ import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { createTrainingProgram } from '../../services/training'
 import { getUserProfile } from '../../services/users'
+import AthleteProfileSummary from '../../components/coach/AthleteProfileSummary'
+import Skeleton from '../../components/shared/Skeleton'
 import { getStoredUser } from '../../services/auth'
 import { breakdownApiError, parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
@@ -116,6 +118,12 @@ export default function CreateProgramPage() {
           </div>
 
           {globalError && <div className="error-banner">⚠️ {globalError}</div>}
+
+          {athlete ? (
+            <AthleteProfileSummary user={athlete} />
+          ) : (
+            <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="profile-edit-section">

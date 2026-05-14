@@ -38,15 +38,32 @@ export interface ChangePasswordRequest {
 // USER TYPES
 // ============================================================================
 
+// BE: required artık sadece firstName + lastName; diğer her şey opsiyonel/nullable.
 export interface CompleteProfileRequest {
-  firstName: string; // minLength: 1, required
-  lastName: string; // minLength: 1, required
-  age: number; // int32, minimum: 13, maximum: 120, required
-  height: number; // decimal (cm), required
-  weight: number; // decimal (kg), required
-  gender: "Male" | "Female" | "Other"; // required
-  fitnessGoalId: string; // UUID of selected fitness goal, required
-  fitnessLevel: "Beginner" | "Intermediate" | "Advanced"; // required
+  firstName: string;
+  lastName: string;
+  age?: number | null;
+  height?: number | null;
+  weight?: number | null;
+  gender?: "Male" | "Female" | "Other" | null;
+  fitnessGoalId?: string | null; // UUID
+  fitnessLevel?: "Beginner" | "Intermediate" | "Advanced" | null;
+  // ─── Yaşam tarzı & sağlık (opsiyonel) ─────────────────────────────
+  dailyWorkLifestyle?: string | null;      // max 2000
+  gymDaysPerWeek?: number | null;          // 0-7
+  healthConditions?: string | null;        // max 2000
+  foodAllergies?: string | null;           // max 2000
+  supplementInterest?: string | null;      // max 2000
+  wantsSupplementSupport?: boolean | null;
+}
+
+export interface UserHealthBlockDto {
+  dailyWorkLifestyle?: string | null;
+  gymDaysPerWeek?: number | null;
+  healthConditions?: string | null;
+  foodAllergies?: string | null;
+  supplementInterest?: string | null;
+  wantsSupplementSupport: boolean;
 }
 
 // PUT /api/users/{id} — tüm alanlar opsiyonel (diff güncelleme)
@@ -72,6 +89,9 @@ export interface UserDto {
   gender?: "Male" | "Female" | "Other"; // nullable
   fitnessGoal?: string; // nullable
   fitnessLevel?: "Beginner" | "Intermediate" | "Advanced"; // nullable
+  isCompletedProfile?: boolean;
+  isActive?: boolean;
+  healthProfile?: UserHealthBlockDto | null;
   createdAt: string; // date-time
 }
 

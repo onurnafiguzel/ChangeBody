@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserProfile } from '../../services/users'
+import AthleteProfileSummary from '../../components/coach/AthleteProfileSummary'
+import Skeleton from '../../components/shared/Skeleton'
 import { useToast } from '../../components/shared/Toast'
 import type { UserDto } from '../../types/api.types'
 import '../../styles/dashboard.css'
@@ -72,6 +74,12 @@ export default function CreateNutritionPlanPage() {
             <button className="btn-back" onClick={() => navigate(-1)}>← Geri</button>
             <span className="section-title">Yeni Beslenme Programı · {athleteName}</span>
           </div>
+
+          {athlete ? (
+            <AthleteProfileSummary user={athlete} />
+          ) : (
+            <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="profile-edit-section">

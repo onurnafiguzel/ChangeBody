@@ -81,13 +81,51 @@ function validateStep3(f: Partial<CompleteProfileRequest>): FormErrors {
   return e
 }
 
+function validateStep4(f: Partial<CompleteProfileRequest>): FormErrors {
+  const e: FormErrors = {}
+  const tooLong = (s?: string | null) => (s ? s.length > 2000 : false)
+  if (tooLong(f.dailyWorkLifestyle))  e.dailyWorkLifestyle  = 'En fazla 2000 karakter.'
+  if (tooLong(f.healthConditions))    e.healthConditions    = 'En fazla 2000 karakter.'
+  if (tooLong(f.foodAllergies))       e.foodAllergies       = 'En fazla 2000 karakter.'
+  if (tooLong(f.supplementInterest))  e.supplementInterest  = 'En fazla 2000 karakter.'
+  return e
+}
+
+const SUPP_DAYS = [0, 1, 2, 3, 4, 5, 6, 7] as const
+
+// Submit payload builder: trim ile boş string'leri undefined yap;
+// supplementInterest yalnızca wantsSupplementSupport=true ise gönderilir.
+function buildPayload(f: Partial<CompleteProfileRequest>): CompleteProfileRequest {
+  const trimText = (s?: string | null): string | undefined => {
+    const t = s?.trim()
+    return t ? t : undefined
+  }
+  return {
+    firstName: (f.firstName ?? '').trim(),
+    lastName: (f.lastName ?? '').trim(),
+    age: f.age ?? undefined,
+    height: f.height ?? undefined,
+    weight: f.weight ?? undefined,
+    gender: f.gender ?? undefined,
+    fitnessGoalId: f.fitnessGoalId ?? undefined,
+    fitnessLevel: f.fitnessLevel ?? undefined,
+    dailyWorkLifestyle: trimText(f.dailyWorkLifestyle),
+    gymDaysPerWeek: f.gymDaysPerWeek ?? undefined,
+    healthConditions: trimText(f.healthConditions),
+    foodAllergies: trimText(f.foodAllergies),
+    supplementInterest:
+      f.wantsSupplementSupport === true ? trimText(f.supplementInterest) : undefined,
+    wantsSupplementSupport: f.wantsSupplementSupport ?? undefined,
+  }
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function ProfileCompletion() {
   const navigate = useNavigate()
   const user = getStoredUser()
 
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [form, setForm] = useState<Partial<CompleteProfileRequest>>({})
   const [errors, setErrors] = useState<FormErrors>({})
   const [globalError, setGlobalError] = useState<string | null>(null)
@@ -140,26 +178,29 @@ export default function ProfileCompletion() {
   }
 
   function goNext() {
-    const errs = step === 1 ? validateStep1(form) : step === 2 ? validateStep2(form) : {}
+    const errs =
+      step === 1 ? validateStep1(form) :
+      step === 2 ? validateStep2(form) :
+      step === 3 ? validateStep3(form) : {}
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    setStep((s) => (s < 3 ? ((s + 1) as 2 | 3) : s))
+    setStep((s) => (s < 4 ? ((s + 1) as 2 | 3 | 4) : s))
   }
 
   function goBack() {
     setErrors({})
-    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2) : s))
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))
   }
 
   async function handleSubmit() {
-    const errs = validateStep3(form)
+    const errs = validateStep4(form)
     if (Object.keys(errs).length) { setErrors(errs); return }
     if (!user?.userId) { navigate('/login'); return }
 
     setLoading(true)
     setGlobalError(null)
     try {
-      await completeProfile(user.userId, form as CompleteProfileRequest)
+      await completeProfile(user.userId, buildPayload(form))
       navigate('/dashboard')
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status: number } }
@@ -182,17 +223,17 @@ export default function ProfileCompletion() {
 
         {/* ── Progress ── */}
         <div className="ob-steps">
-          {([1, 2, 3] as const).map((n, i) => (
+          {([1, 2, 3, 4] as const).map((n, i) => (
             <>
               <div key={n} className={`ob-step ${step === n ? 'active' : step > n ? 'done' : ''}`}>
                 <div className="ob-step-dot">
                   {step > n ? '✓' : n}
                 </div>
                 <div className="ob-step-label">
-                  {n === 1 ? 'Kişisel' : n === 2 ? 'Vücut' : 'Hedef'}
+                  {n === 1 ? 'Kişisel' : n === 2 ? 'Vücut' : n === 3 ? 'Hedef' : 'Sağlık'}
                 </div>
               </div>
-              {i < 2 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
+              {i < 3 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
             </>
           ))}
         </div>
@@ -384,12 +425,135 @@ export default function ProfileCompletion() {
           </>
         )}
 
+        {/* ══════════════════════════════════════════ STEP 4 — Yaşam Tarzı & Sağlık */}
+        {step === 4 && (
+          <>
+            <div className="ob-step-header">
+              <div className="ob-step-icon">⚕️</div>
+              <div className="ob-step-title">Yaşam Tarzı & Sağlık</div>
+              <div className="ob-step-desc">
+                Bu sorular opsiyoneldir, koçunun sana daha uygun program hazırlamasına yardımcı olur.
+              </div>
+            </div>
+
+            <div className="ob-form-group">
+              <label className="ob-label">💼 Günlük iş yaşantın <span className="ob-optional">(opsiyonel)</span></label>
+              <textarea
+                className={`ob-input ${errors.dailyWorkLifestyle ? 'error' : ''}`}
+                rows={2}
+                placeholder="Örn. Masa başı 8 saat, ayakta çalışıyorum..."
+                maxLength={2000}
+                value={form.dailyWorkLifestyle ?? ''}
+                onChange={(e) => set('dailyWorkLifestyle', e.target.value)}
+              />
+              <div className="ob-char-counter">{(form.dailyWorkLifestyle ?? '').length}/2000</div>
+              {errors.dailyWorkLifestyle && <span className="ob-field-error">{errors.dailyWorkLifestyle}</span>}
+            </div>
+
+            <div className="ob-form-group">
+              <label className="ob-label">🏋️ Haftada kaç gün gym'e erişimin var?</label>
+              <div className="ob-segmented">
+                {SUPP_DAYS.map((d) => (
+                  <button
+                    type="button"
+                    key={d}
+                    className={form.gymDaysPerWeek === d ? 'active' : ''}
+                    onClick={() => set('gymDaysPerWeek', d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+                {form.gymDaysPerWeek != null && (
+                  <button
+                    type="button"
+                    className="ob-segmented-clear"
+                    onClick={() => set('gymDaysPerWeek', undefined)}
+                    title="Seçimi temizle"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="ob-form-group">
+              <label className="ob-label">⚕️ Sağlık problemlerin <span className="ob-optional">(opsiyonel)</span></label>
+              <textarea
+                className={`ob-input ${errors.healthConditions ? 'error' : ''}`}
+                rows={2}
+                placeholder="Örn. Sırt ağrısı, diz problemi..."
+                maxLength={2000}
+                value={form.healthConditions ?? ''}
+                onChange={(e) => set('healthConditions', e.target.value)}
+              />
+              <div className="ob-char-counter">{(form.healthConditions ?? '').length}/2000</div>
+              {errors.healthConditions && <span className="ob-field-error">{errors.healthConditions}</span>}
+            </div>
+
+            <div className="ob-form-group">
+              <label className="ob-label">🥜 Besin alerjilerin <span className="ob-optional">(opsiyonel)</span></label>
+              <textarea
+                className={`ob-input ${errors.foodAllergies ? 'error' : ''}`}
+                rows={2}
+                placeholder="Örn. Laktoz, fındık, gluten..."
+                maxLength={2000}
+                value={form.foodAllergies ?? ''}
+                onChange={(e) => set('foodAllergies', e.target.value)}
+              />
+              <div className="ob-char-counter">{(form.foodAllergies ?? '').length}/2000</div>
+              {errors.foodAllergies && <span className="ob-field-error">{errors.foodAllergies}</span>}
+            </div>
+
+            <div className="ob-form-group">
+              <label className="ob-label">💊 Supplement desteği almak ister misin?</label>
+              <div className="ob-radio-group">
+                {([
+                  { val: true, label: 'Evet, ilgilenirim' },
+                  { val: false, label: 'Hayır, gerekmez' },
+                  { val: null, label: 'Belirtmek istemiyorum' },
+                ] as const).map((opt) => {
+                  const isSel =
+                    (opt.val === null && (form.wantsSupplementSupport === null || form.wantsSupplementSupport === undefined)) ||
+                    (opt.val !== null && form.wantsSupplementSupport === opt.val)
+                  return (
+                    <button
+                      type="button"
+                      key={String(opt.val)}
+                      className={`ob-radio-item ${isSel ? 'selected' : ''}`}
+                      onClick={() => set('wantsSupplementSupport', opt.val as unknown as CompleteProfileRequest['wantsSupplementSupport'])}
+                    >
+                      <span className="ob-radio-dot">{isSel ? '●' : '○'}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {form.wantsSupplementSupport === true && (
+              <div className="ob-form-group">
+                <label className="ob-label">Hangi supplement'lere ilgilisin?</label>
+                <textarea
+                  className={`ob-input ${errors.supplementInterest ? 'error' : ''}`}
+                  rows={2}
+                  placeholder="Örn. Whey protein, kreatin, omega-3..."
+                  maxLength={2000}
+                  value={form.supplementInterest ?? ''}
+                  onChange={(e) => set('supplementInterest', e.target.value)}
+                />
+                <div className="ob-char-counter">{(form.supplementInterest ?? '').length}/2000</div>
+                {errors.supplementInterest && <span className="ob-field-error">{errors.supplementInterest}</span>}
+              </div>
+            )}
+          </>
+        )}
+
         {/* ── Nav ── */}
         <div className="ob-nav">
           {step > 1 && (
             <button className="ob-btn-back" onClick={goBack}>← Geri</button>
           )}
-          {step < 3 ? (
+          {step < 4 ? (
             <button className="ob-btn-next" onClick={goNext}>
               Devam Et →
             </button>

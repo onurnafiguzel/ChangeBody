@@ -2505,44 +2505,24 @@
       },
       "CompleteProfileRequest": {
         "type": "object",
-        "required": ["firstName", "lastName", "age", "height", "weight", "gender", "fitnessGoal", "fitnessLevel"],
+        "required": ["firstName", "lastName"],
+        "description": "Profile data is persisted to the `UserProfiles` table (1:1 with User). Health/lifestyle fields are optional — FE can submit them in a single step or in a follow-up call.",
         "properties": {
-          "firstName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "lastName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "age": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 13,
-            "maximum": 120
-          },
-          "height": {
-            "type": "number",
-            "format": "decimal",
-            "description": "Height in cm"
-          },
-          "weight": {
-            "type": "number",
-            "format": "decimal",
-            "description": "Weight in kg"
-          },
-          "gender": {
-            "type": "string",
-            "enum": ["Male", "Female", "Other"]
-          },
-          "fitnessGoal": {
-            "type": "string",
-            "description": "Fitness goal ID (UUID) to associate user with a fitness goal"
-          },
-          "fitnessLevel": {
-            "type": "string",
-            "enum": ["Beginner", "Intermediate", "Advanced"]
-          }
+          "firstName": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "lastName":  { "type": "string", "minLength": 1, "maxLength": 100 },
+          "age":       { "type": "integer", "format": "int32", "minimum": 1, "maximum": 120, "nullable": true },
+          "height":    { "type": "number",  "format": "decimal", "nullable": true, "description": "Height in cm (50..300)" },
+          "weight":    { "type": "number",  "format": "decimal", "nullable": true, "description": "Weight in kg (1..500)" },
+          "gender":    { "type": "string", "nullable": true, "enum": ["Male", "Female", "Other"] },
+          "fitnessGoalId": { "type": "string", "format": "uuid", "nullable": true, "description": "Fitness goal ID from /api/fitness-goals" },
+          "fitnessLevel":  { "type": "string", "nullable": true, "enum": ["Beginner", "Intermediate", "Advanced"] },
+
+          "dailyWorkLifestyle":     { "type": "string", "nullable": true, "maxLength": 2000, "description": "Free-text — günlük iş yaşantısı (örn. 'Masa başı 8 saat')" },
+          "gymDaysPerWeek":         { "type": "integer", "format": "int32", "nullable": true, "minimum": 0, "maximum": 7, "description": "Gym haftada kaç gün açık/erişilebilir" },
+          "healthConditions":       { "type": "string", "nullable": true, "maxLength": 2000, "description": "Sağlık problemleri (örn. 'Sırt ağrısı, alerji')" },
+          "foodAllergies":          { "type": "string", "nullable": true, "maxLength": 2000, "description": "Besin alerjileri (örn. 'Laktoz, fındık')" },
+          "supplementInterest":     { "type": "string", "nullable": true, "maxLength": 2000, "description": "Hangi supplement'lere ilgi duyduğu" },
+          "wantsSupplementSupport": { "type": "boolean", "nullable": true, "description": "Supplement desteği isteyip istemediği" }
         }
       },
       "ChangePasswordRequest": {
@@ -2609,10 +2589,28 @@
             "nullable": true,
             "enum": ["Beginner", "Intermediate", "Advanced"]
           },
+          "isCompletedProfile": { "type": "boolean" },
+          "isActive":           { "type": "boolean" },
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "healthProfile": {
+            "allOf": [{ "$ref": "#/components/schemas/UserHealthBlockDto" }],
+            "nullable": true
           }
+        }
+      },
+      "UserHealthBlockDto": {
+        "type": "object",
+        "description": "Free-text health & lifestyle answers captured during profile completion.",
+        "properties": {
+          "dailyWorkLifestyle":     { "type": "string", "nullable": true },
+          "gymDaysPerWeek":         { "type": "integer", "format": "int32", "nullable": true, "minimum": 0, "maximum": 7 },
+          "healthConditions":       { "type": "string", "nullable": true },
+          "foodAllergies":          { "type": "string", "nullable": true },
+          "supplementInterest":     { "type": "string", "nullable": true },
+          "wantsSupplementSupport": { "type": "boolean" }
         }
       },
       "UserAssignmentDto": {

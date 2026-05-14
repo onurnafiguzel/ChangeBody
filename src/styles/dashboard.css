@@ -2479,3 +2479,81 @@
 @media (max-width: 720px) {
   .package-progress-header { flex-wrap: wrap; }
 }
+
+/* ─── Athlete Profile Summary (Coach create pages) ─── */
+.athlete-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.athlete-summary-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.athlete-summary-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.athlete-summary-email {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.athlete-summary-tag {
+  margin-left: auto;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.athlete-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.athlete-summary-health {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.athlete-summary-health-title {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.athlete-summary-health-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.athlete-summary-health-row .label {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 170px;
+}
+.athlete-summary-health-row .value {
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (max-width: 640px) {
+  .athlete-summary-health-row { flex-direction: column; gap: 2px; }
+  .athlete-summary-health-row .label { min-width: 0; }
+}
