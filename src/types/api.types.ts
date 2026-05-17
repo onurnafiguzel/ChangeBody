@@ -130,7 +130,6 @@ export interface PersonalRecordDto {
   lift: PersonalRecordLift;
   weightKg: number;
   recordedAt: string;
-  notes?: string | null;
   createdAt: string;
 }
 
@@ -144,7 +143,6 @@ export interface AddPersonalRecordRequest {
   lift: PersonalRecordLift;
   weightKg: number;
   recordedAt?: string | null;
-  notes?: string | null;
 }
 
 export type PhotoViewType = "Front" | "Back" | "Left" | "Right";

@@ -414,7 +414,6 @@ function AddPrModal({
   onSubmit: (p: AddPersonalRecordRequest) => Promise<void>
 }) {
   const [weight, setWeight] = useState<string>('')
-  const [notes, setNotes] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -430,13 +429,6 @@ function AddPrModal({
         />
         {error && <span className="ob-field-error">{error}</span>}
       </div>
-      <div className="ob-form-group">
-        <label className="ob-label">Not <span className="ob-optional">(opsiyonel)</span></label>
-        <input
-          className="ob-input" type="text" maxLength={200}
-          value={notes} onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
       <div className="ob-nav">
         <button className="ob-btn-back" onClick={onClose} disabled={submitting}>İptal</button>
         <button
@@ -447,7 +439,7 @@ function AddPrModal({
             if (!w || w <= 0) { setError('Pozitif bir sayı girin.'); return }
             setSubmitting(true)
             try {
-              await onSubmit({ lift, weightKg: w, notes: notes.trim() || null })
+              await onSubmit({ lift, weightKg: w })
             } finally {
               setSubmitting(false)
             }
@@ -497,7 +489,6 @@ function PrHistoryModal({
             <div className="profile-summary-item" key={r.id}>
               <span className="profile-summary-label">{formatDate(r.recordedAt)}</span>
               <span className="profile-summary-value">{r.weightKg} kg</span>
-              {r.notes && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.notes}</span>}
             </div>
           ))}
         </div>

@@ -2845,7 +2845,6 @@
           "lift":       { "$ref": "#/components/schemas/PersonalRecordLift" },
           "weightKg":   { "type": "number", "format": "decimal" },
           "recordedAt": { "type": "string", "format": "date-time" },
-          "notes":      { "type": "string", "nullable": true, "maxLength": 200 },
           "createdAt":  { "type": "string", "format": "date-time" }
         }
       },
@@ -2863,8 +2862,7 @@
         "properties": {
           "lift":       { "$ref": "#/components/schemas/PersonalRecordLift" },
           "weightKg":   { "type": "number", "format": "decimal" },
-          "recordedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "notes":      { "type": "string", "nullable": true, "maxLength": 200 }
+          "recordedAt": { "type": "string", "format": "date-time", "nullable": true }
         }
       },
       "ChangePasswordRequest": {
