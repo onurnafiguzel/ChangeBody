@@ -55,6 +55,96 @@ export interface CompleteProfileRequest {
   foodAllergies?: string | null;           // max 2000
   supplementInterest?: string | null;      // max 2000
   wantsSupplementSupport?: boolean | null;
+  // ─── Başlangıç vücut ölçüleri (opsiyonel) ─────────────────────────
+  waistCm?: number | null;                 // Bel çevresi (cm) — US Navy BF için
+  armCm?: number | null;                   // Kol çevresi (cm)
+  legCm?: number | null;                   // Bacak çevresi (cm)
+  neckCm?: number | null;                  // Boyun çevresi — US Navy BF için zorunlu
+  hipCm?: number | null;                   // Kalça çevresi — kadınlar için US Navy BF
+  // ─── Başlangıç PR'ları (opsiyonel, kg) ────────────────────────────
+  benchPressPR?: number | null;
+  squatPR?: number | null;
+  deadliftPR?: number | null;
+  overheadPressPR?: number | null;
+  barbellRowPR?: number | null;
+  pullUpPR?: number | null;
+}
+
+// ============================================================================
+// BODY MEASUREMENTS & PERSONAL RECORDS
+// ============================================================================
+
+export type PersonalRecordLift =
+  | "BenchPress"
+  | "Squat"
+  | "Deadlift"
+  | "OverheadPress"
+  | "BarbellRow"
+  | "PullUp";
+
+export interface BodyMeasurementDto {
+  id: string;
+  userId: string;
+  recordedAt: string;        // ISO date-time
+  weightKg?: number | null;
+  waistCm?: number | null;
+  armCm?: number | null;
+  legCm?: number | null;
+  neckCm?: number | null;
+  hipCm?: number | null;
+  bodyFatPercent?: number | null;   // BE-computed (US Navy)
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface MeasurementDeltaDto {
+  weightKg?: number | null;
+  waistCm?: number | null;
+  armCm?: number | null;
+  legCm?: number | null;
+  neckCm?: number | null;
+  hipCm?: number | null;
+  bodyFatPercent?: number | null;
+}
+
+export interface BodyMeasurementComparisonDto {
+  previous: BodyMeasurementDto | null;
+  current: BodyMeasurementDto | null;
+  delta: MeasurementDeltaDto | null;
+}
+
+export interface AddBodyMeasurementRequest {
+  recordedAt?: string | null;
+  weightKg?: number | null;
+  waistCm?: number | null;
+  armCm?: number | null;
+  legCm?: number | null;
+  neckCm?: number | null;
+  hipCm?: number | null;
+  notes?: string | null;
+}
+
+export interface PersonalRecordDto {
+  id: string;
+  userId: string;
+  lift: PersonalRecordLift;
+  weightKg: number;
+  recordedAt: string;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface PersonalRecordCurrentDto {
+  lift: PersonalRecordLift;
+  weightKg: number | null;
+  recordedAt: string | null;
+}
+
+export interface AddPersonalRecordRequest {
+  lift: PersonalRecordLift;
+  weightKg: number;
+  recordedAt?: string | null;
+  notes?: string | null;
 }
 
 export type PhotoViewType = "Front" | "Back" | "Left" | "Right";
@@ -811,6 +901,18 @@ export const API_ENDPOINTS = {
 
   // Profile Completion Check
   PROFILE_COMPLETE_CHECK: (userId: string) => `/api/users/${userId}/profile-complete`,
+
+  // Body Measurements
+  USER_BODY_MEASUREMENTS: (userId: string) => `/api/users/${userId}/body-measurements`,
+  USER_BODY_MEASUREMENT_BY_ID: (userId: string, measurementId: string) =>
+    `/api/users/${userId}/body-measurements/${measurementId}`,
+  USER_BODY_MEASUREMENTS_COMPARISON: (userId: string) =>
+    `/api/users/${userId}/body-measurements/comparison`,
+
+  // Personal Records
+  USER_PERSONAL_RECORDS: (userId: string) => `/api/users/${userId}/personal-records`,
+  USER_PERSONAL_RECORDS_HISTORY: (userId: string) =>
+    `/api/users/${userId}/personal-records/history`,
 };
 
 // ============================================================================

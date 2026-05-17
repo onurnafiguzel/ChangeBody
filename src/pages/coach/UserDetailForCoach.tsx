@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import NutritionPlanViewModal from '../../components/nutrition/NutritionPlanViewModal'
+import ProgressView from '../../components/progress/ProgressView'
 import { getUserProfile, getWaitingUserStatus } from '../../services/users'
 import {
   activateNutritionPlan,
@@ -294,6 +295,11 @@ export default function UserDetailForCoach() {
               </ul>
             )}
           </div>
+
+          {/* Gelişim (read-only) */}
+          {userId && (
+            <ProgressView userId={userId} canEdit={false} gender={profile.gender ?? null} />
+          )}
 
           {/* Action */}
           <div className="profile-edit-actions">

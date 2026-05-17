@@ -13,6 +13,7 @@ const USER_NAV: NavItem[] = [
   { path: '/exercises', icon: '💪', label: 'Egzersizler' },
   { path: '/packages', icon: '📦', label: 'Paketler' },
   { path: '/programs', icon: '📋', label: 'Program' },
+  { path: '/progress', icon: '📈', label: 'Gelişim' },
   { path: '/profile', icon: '👤', label: 'Profil' },
 ]
 

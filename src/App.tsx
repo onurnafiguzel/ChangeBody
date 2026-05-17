@@ -10,6 +10,7 @@ import ProgramsPage from './pages/programs/ProgramsPage'
 import WorkoutSessionPage from './pages/programs/WorkoutSessionPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditPage from './pages/profile/ProfileEditPage'
+import ProgressPage from './pages/progress/ProgressPage'
 import CoachDashboard from './pages/coach/CoachDashboard'
 import WaitingUsersPage from './pages/coach/WaitingUsersPage'
 import UserDetailForCoach from './pages/coach/UserDetailForCoach'
@@ -145,6 +146,16 @@ export default function App() {
             <RequireRole role="User">
               <ProfileGuard>
                 <WorkoutSessionPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/progress"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <ProgressPage />
               </ProfileGuard>
             </RequireRole>
           }

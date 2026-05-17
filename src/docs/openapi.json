@@ -422,6 +422,124 @@
         }
       }
     },
+    "/api/users/{userId}/body-measurements": {
+      "post": {
+        "tags": ["Body Measurements"],
+        "summary": "Add a new body-measurement snapshot",
+        "description": "Adds a measurement record. Server computes BodyFatPercent (US Navy) when inputs allow.",
+        "operationId": "AddBodyMeasurement",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddBodyMeasurementRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "get": {
+        "tags": ["Body Measurements"],
+        "summary": "List recent body-measurement snapshots",
+        "operationId": "ListBodyMeasurements",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "take", "in": "query", "required": false, "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BodyMeasurementDto" } } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/body-measurements/comparison": {
+      "get": {
+        "tags": ["Body Measurements"],
+        "summary": "Compare the latest two measurements",
+        "description": "Returns the two most recent measurements and per-field deltas (current - previous).",
+        "operationId": "GetBodyMeasurementComparison",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BodyMeasurementComparisonDto" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/body-measurements/{measurementId}": {
+      "get": {
+        "tags": ["Body Measurements"],
+        "summary": "Get a single measurement by ID",
+        "operationId": "GetBodyMeasurementById",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "measurementId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BodyMeasurementDto" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/personal-records": {
+      "post": {
+        "tags": ["Personal Records"],
+        "summary": "Add a personal-record entry",
+        "description": "Multiple entries per lift are allowed; \"current\" is computed as the heaviest.",
+        "operationId": "AddPersonalRecord",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddPersonalRecordRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      },
+      "get": {
+        "tags": ["Personal Records"],
+        "summary": "Get the current PR (heaviest) for each tracked lift",
+        "operationId": "GetCurrentPersonalRecords",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PersonalRecordCurrentDto" } } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/users/{userId}/personal-records/history": {
+      "get": {
+        "tags": ["Personal Records"],
+        "summary": "Get PR history for a specific lift",
+        "operationId": "GetPersonalRecordHistory",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "lift",   "in": "query", "required": true, "schema": { "$ref": "#/components/schemas/PersonalRecordLift" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PersonalRecordDto" } } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
     "/api/users/{id}/change-password": {
       "post": {
         "tags": ["Users"],
@@ -2649,7 +2767,104 @@
           "healthConditions":       { "type": "string", "nullable": true, "maxLength": 2000, "description": "Sağlık problemleri (örn. 'Sırt ağrısı, alerji')" },
           "foodAllergies":          { "type": "string", "nullable": true, "maxLength": 2000, "description": "Besin alerjileri (örn. 'Laktoz, fındık')" },
           "supplementInterest":     { "type": "string", "nullable": true, "maxLength": 2000, "description": "Hangi supplement'lere ilgi duyduğu" },
-          "wantsSupplementSupport": { "type": "boolean", "nullable": true, "description": "Supplement desteği isteyip istemediği" }
+          "wantsSupplementSupport": { "type": "boolean", "nullable": true, "description": "Supplement desteği isteyip istemediği" },
+
+          "waistCm":  { "type": "number", "format": "decimal", "nullable": true, "description": "Bel çevresi (cm). US Navy yağ oranı hesabı için kullanılır." },
+          "armCm":    { "type": "number", "format": "decimal", "nullable": true, "description": "Kol çevresi (cm)" },
+          "legCm":    { "type": "number", "format": "decimal", "nullable": true, "description": "Bacak çevresi (cm)" },
+          "neckCm":   { "type": "number", "format": "decimal", "nullable": true, "description": "Boyun çevresi (cm). US Navy formülü için zorunlu." },
+          "hipCm":    { "type": "number", "format": "decimal", "nullable": true, "description": "Kalça çevresi (cm). US Navy formülünde kadınlar için zorunlu." },
+
+          "benchPressPR":    { "type": "number", "format": "decimal", "nullable": true, "description": "Bench Press PR (kg)" },
+          "squatPR":         { "type": "number", "format": "decimal", "nullable": true, "description": "Squat PR (kg)" },
+          "deadliftPR":      { "type": "number", "format": "decimal", "nullable": true, "description": "Deadlift PR (kg)" },
+          "overheadPressPR": { "type": "number", "format": "decimal", "nullable": true, "description": "Overhead Press PR (kg)" },
+          "barbellRowPR":    { "type": "number", "format": "decimal", "nullable": true, "description": "Barbell Row PR (kg)" },
+          "pullUpPR":        { "type": "number", "format": "decimal", "nullable": true, "description": "Pull-Up PR (toplam yük, kg)" }
+        }
+      },
+      "PersonalRecordLift": {
+        "type": "string",
+        "enum": ["BenchPress", "Squat", "Deadlift", "OverheadPress", "BarbellRow", "PullUp"]
+      },
+      "BodyMeasurementDto": {
+        "type": "object",
+        "properties": {
+          "id":              { "type": "string", "format": "uuid" },
+          "userId":          { "type": "string", "format": "uuid" },
+          "recordedAt":      { "type": "string", "format": "date-time" },
+          "weightKg":        { "type": "number", "format": "decimal", "nullable": true },
+          "waistCm":         { "type": "number", "format": "decimal", "nullable": true },
+          "armCm":           { "type": "number", "format": "decimal", "nullable": true },
+          "legCm":           { "type": "number", "format": "decimal", "nullable": true },
+          "neckCm":          { "type": "number", "format": "decimal", "nullable": true },
+          "hipCm":           { "type": "number", "format": "decimal", "nullable": true },
+          "bodyFatPercent":  { "type": "number", "format": "decimal", "nullable": true, "description": "US Navy formülünden sunucuda hesaplanır." },
+          "notes":           { "type": "string", "nullable": true, "maxLength": 500 },
+          "createdAt":       { "type": "string", "format": "date-time" }
+        }
+      },
+      "MeasurementDeltaDto": {
+        "type": "object",
+        "properties": {
+          "weightKg":       { "type": "number", "format": "decimal", "nullable": true },
+          "waistCm":        { "type": "number", "format": "decimal", "nullable": true },
+          "armCm":          { "type": "number", "format": "decimal", "nullable": true },
+          "legCm":          { "type": "number", "format": "decimal", "nullable": true },
+          "neckCm":         { "type": "number", "format": "decimal", "nullable": true },
+          "hipCm":          { "type": "number", "format": "decimal", "nullable": true },
+          "bodyFatPercent": { "type": "number", "format": "decimal", "nullable": true }
+        }
+      },
+      "BodyMeasurementComparisonDto": {
+        "type": "object",
+        "properties": {
+          "previous": { "$ref": "#/components/schemas/BodyMeasurementDto", "nullable": true },
+          "current":  { "$ref": "#/components/schemas/BodyMeasurementDto", "nullable": true },
+          "delta":    { "$ref": "#/components/schemas/MeasurementDeltaDto", "nullable": true }
+        }
+      },
+      "AddBodyMeasurementRequest": {
+        "type": "object",
+        "properties": {
+          "recordedAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Boş bırakılırsa sunucu UTC now alır." },
+          "weightKg":   { "type": "number", "format": "decimal", "nullable": true },
+          "waistCm":    { "type": "number", "format": "decimal", "nullable": true },
+          "armCm":      { "type": "number", "format": "decimal", "nullable": true },
+          "legCm":      { "type": "number", "format": "decimal", "nullable": true },
+          "neckCm":     { "type": "number", "format": "decimal", "nullable": true },
+          "hipCm":      { "type": "number", "format": "decimal", "nullable": true },
+          "notes":      { "type": "string", "nullable": true, "maxLength": 500 }
+        }
+      },
+      "PersonalRecordDto": {
+        "type": "object",
+        "properties": {
+          "id":         { "type": "string", "format": "uuid" },
+          "userId":     { "type": "string", "format": "uuid" },
+          "lift":       { "$ref": "#/components/schemas/PersonalRecordLift" },
+          "weightKg":   { "type": "number", "format": "decimal" },
+          "recordedAt": { "type": "string", "format": "date-time" },
+          "notes":      { "type": "string", "nullable": true, "maxLength": 200 },
+          "createdAt":  { "type": "string", "format": "date-time" }
+        }
+      },
+      "PersonalRecordCurrentDto": {
+        "type": "object",
+        "properties": {
+          "lift":       { "$ref": "#/components/schemas/PersonalRecordLift" },
+          "weightKg":   { "type": "number", "format": "decimal", "nullable": true },
+          "recordedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "AddPersonalRecordRequest": {
+        "type": "object",
+        "required": ["lift", "weightKg"],
+        "properties": {
+          "lift":       { "$ref": "#/components/schemas/PersonalRecordLift" },
+          "weightKg":   { "type": "number", "format": "decimal" },
+          "recordedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "notes":      { "type": "string", "nullable": true, "maxLength": 200 }
         }
       },
       "ChangePasswordRequest": {

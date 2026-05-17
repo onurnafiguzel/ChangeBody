@@ -100,6 +100,27 @@ function validateStep4(f: Partial<CompleteProfileRequest>): FormErrors {
   return e
 }
 
+const MEASUREMENT_FIELDS: Array<keyof CompleteProfileRequest> = [
+  'waistCm', 'armCm', 'legCm', 'neckCm', 'hipCm',
+]
+const PR_FIELDS: Array<keyof CompleteProfileRequest> = [
+  'benchPressPR', 'squatPR', 'deadliftPR', 'overheadPressPR', 'barbellRowPR', 'pullUpPR',
+]
+
+function validatePositiveNumbers(
+  f: Partial<CompleteProfileRequest>,
+  keys: Array<keyof CompleteProfileRequest>,
+): FormErrors {
+  const e: FormErrors = {}
+  for (const k of keys) {
+    const v = f[k] as number | null | undefined
+    if (v != null && (typeof v !== 'number' || isNaN(v) || v <= 0)) {
+      e[k] = 'Pozitif bir sayı girin veya boş bırakın.'
+    }
+  }
+  return e
+}
+
 const SUPP_DAYS = [0, 1, 2, 3, 4, 5, 6, 7] as const
 
 // Submit payload builder: trim ile boş string'leri undefined yap;
@@ -125,6 +146,17 @@ function buildPayload(f: Partial<CompleteProfileRequest>): CompleteProfileReques
     supplementInterest:
       f.wantsSupplementSupport === true ? trimText(f.supplementInterest) : undefined,
     wantsSupplementSupport: f.wantsSupplementSupport ?? undefined,
+    waistCm: f.waistCm ?? undefined,
+    armCm: f.armCm ?? undefined,
+    legCm: f.legCm ?? undefined,
+    neckCm: f.neckCm ?? undefined,
+    hipCm: f.gender === 'Female' ? (f.hipCm ?? undefined) : undefined,
+    benchPressPR: f.benchPressPR ?? undefined,
+    squatPR: f.squatPR ?? undefined,
+    deadliftPR: f.deadliftPR ?? undefined,
+    overheadPressPR: f.overheadPressPR ?? undefined,
+    barbellRowPR: f.barbellRowPR ?? undefined,
+    pullUpPR: f.pullUpPR ?? undefined,
   }
 }
 
@@ -134,7 +166,7 @@ export default function ProfileCompletion() {
   const navigate = useNavigate()
   const user = getStoredUser()
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1)
   const [photos, setPhotos] = useState<PhotoFiles>({
     Front: null, Back: null, Left: null, Right: null,
   })
@@ -195,15 +227,31 @@ export default function ProfileCompletion() {
       step === 1 ? validateStep1(form) :
       step === 2 ? validateStep2(form) :
       step === 3 ? validateStep3(form) :
-      step === 4 ? validateStep4(form) : {}
+      step === 4 ? validateStep4(form) :
+      step === 5 ? validatePositiveNumbers(form, MEASUREMENT_FIELDS) :
+      step === 6 ? validatePositiveNumbers(form, PR_FIELDS) : {}
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    setStep((s) => (s < 5 ? ((s + 1) as 2 | 3 | 4 | 5) : s))
+    setStep((s) => (s < 7 ? ((s + 1) as 2 | 3 | 4 | 5 | 6 | 7) : s))
   }
 
   function goBack() {
     setErrors({})
-    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : s))
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4 | 5 | 6) : s))
+  }
+
+  function skipStep() {
+    // Yeni opsiyonel adımlar (5, 6) için: validasyon olmadan field'ları temizleyip ilerle.
+    if (step === 5) {
+      setForm((p) => ({ ...p, waistCm: undefined, armCm: undefined, legCm: undefined, neckCm: undefined, hipCm: undefined }))
+    } else if (step === 6) {
+      setForm((p) => ({
+        ...p, benchPressPR: undefined, squatPR: undefined, deadliftPR: undefined,
+        overheadPressPR: undefined, barbellRowPR: undefined, pullUpPR: undefined,
+      }))
+    }
+    setErrors({})
+    setStep((s) => (s < 7 ? ((s + 1) as 2 | 3 | 4 | 5 | 6 | 7) : s))
   }
 
   const photosReady = !!(photos.Front && photos.Back && photos.Left && photos.Right)
@@ -264,17 +312,23 @@ export default function ProfileCompletion() {
 
         {/* ── Progress ── */}
         <div className="ob-steps">
-          {([1, 2, 3, 4, 5] as const).map((n, i) => (
+          {([1, 2, 3, 4, 5, 6, 7] as const).map((n, i) => (
             <>
               <div key={n} className={`ob-step ${step === n ? 'active' : step > n ? 'done' : ''}`}>
                 <div className="ob-step-dot">
                   {step > n ? '✓' : n}
                 </div>
                 <div className="ob-step-label">
-                  {n === 1 ? 'Kişisel' : n === 2 ? 'Vücut' : n === 3 ? 'Hedef' : n === 4 ? 'Sağlık' : 'Fotoğraf'}
+                  {n === 1 ? 'Kişisel'
+                    : n === 2 ? 'Vücut'
+                    : n === 3 ? 'Hedef'
+                    : n === 4 ? 'Sağlık'
+                    : n === 5 ? 'Ölçüm'
+                    : n === 6 ? 'PR'
+                    : 'Fotoğraf'}
                 </div>
               </div>
-              {i < 4 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
+              {i < 6 && <div key={`line-${n}`} className={`ob-step-line ${step > n ? 'done' : ''}`} />}
             </>
           ))}
         </div>
@@ -589,8 +643,123 @@ export default function ProfileCompletion() {
           </>
         )}
 
-        {/* ══════════════════════════════════════════ STEP 5 — Vücut Fotoğrafları */}
+        {/* ══════════════════════════════════════════ STEP 5 — Vücut Ölçüleri */}
         {step === 5 && (
+          <>
+            <div className="ob-step-header">
+              <div className="ob-step-icon">📐</div>
+              <div className="ob-step-title">Başlangıç Ölçülerin</div>
+              <div className="ob-step-desc">
+                Aylık ilerlemeni görebilmen için başlangıç değerlerini paylaş. Hepsi opsiyonel.
+              </div>
+            </div>
+
+            <div className="ob-form-row">
+              <div className="ob-form-group">
+                <label className="ob-label">Bel çevresi (cm) <span className="ob-optional">(opsiyonel)</span></label>
+                <input
+                  className={`ob-input ${errors.waistCm ? 'error' : ''}`}
+                  type="number" step="0.1" placeholder="80"
+                  value={form.waistCm ?? ''}
+                  onChange={(e) => set('waistCm', e.target.value ? parseFloat(e.target.value) : null)}
+                />
+                {errors.waistCm && <span className="ob-field-error">{errors.waistCm}</span>}
+              </div>
+              <div className="ob-form-group">
+                <label className="ob-label">Boyun çevresi (cm) <span className="ob-optional">(opsiyonel)</span></label>
+                <input
+                  className={`ob-input ${errors.neckCm ? 'error' : ''}`}
+                  type="number" step="0.1" placeholder="38"
+                  value={form.neckCm ?? ''}
+                  onChange={(e) => set('neckCm', e.target.value ? parseFloat(e.target.value) : null)}
+                />
+                {errors.neckCm && <span className="ob-field-error">{errors.neckCm}</span>}
+              </div>
+            </div>
+
+            <div className="ob-form-row">
+              <div className="ob-form-group">
+                <label className="ob-label">Kol çevresi (cm) <span className="ob-optional">(opsiyonel)</span></label>
+                <input
+                  className={`ob-input ${errors.armCm ? 'error' : ''}`}
+                  type="number" step="0.1" placeholder="35"
+                  value={form.armCm ?? ''}
+                  onChange={(e) => set('armCm', e.target.value ? parseFloat(e.target.value) : null)}
+                />
+                {errors.armCm && <span className="ob-field-error">{errors.armCm}</span>}
+              </div>
+              <div className="ob-form-group">
+                <label className="ob-label">Bacak çevresi (cm) <span className="ob-optional">(opsiyonel)</span></label>
+                <input
+                  className={`ob-input ${errors.legCm ? 'error' : ''}`}
+                  type="number" step="0.1" placeholder="55"
+                  value={form.legCm ?? ''}
+                  onChange={(e) => set('legCm', e.target.value ? parseFloat(e.target.value) : null)}
+                />
+                {errors.legCm && <span className="ob-field-error">{errors.legCm}</span>}
+              </div>
+            </div>
+
+            {form.gender === 'Female' && (
+              <div className="ob-form-row">
+                <div className="ob-form-group">
+                  <label className="ob-label">Kalça çevresi (cm) <span className="ob-optional">(opsiyonel)</span></label>
+                  <input
+                    className={`ob-input ${errors.hipCm ? 'error' : ''}`}
+                    type="number" step="0.1" placeholder="95"
+                    value={form.hipCm ?? ''}
+                    onChange={(e) => set('hipCm', e.target.value ? parseFloat(e.target.value) : null)}
+                  />
+                  {errors.hipCm && <span className="ob-field-error">{errors.hipCm}</span>}
+                </div>
+              </div>
+            )}
+
+            <div className="ob-tips-card">
+              <div className="ob-tips-title">💡 Bilgi</div>
+              <ul className="ob-tips-list">
+                <li>Bel + Boyun {form.gender === 'Female' ? '+ Kalça ' : ''}girersen sistem otomatik <strong>vücut yağ oranını</strong> hesaplar (US Navy formülü).</li>
+                <li>Aynı ölçüleri her ay yenileyerek ilerlemeni görebilirsin.</li>
+              </ul>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════ STEP 6 — Personal Records */}
+        {step === 6 && (
+          <>
+            <div className="ob-step-header">
+              <div className="ob-step-icon">🏋️</div>
+              <div className="ob-step-title">Personal Record'ların</div>
+              <div className="ob-step-desc">
+                Şu an kaldırabildiğin maksimum ağırlıkları (1RM) gir. Hepsi opsiyonel — bilmediklerini boş bırakabilirsin.
+              </div>
+            </div>
+
+            {([
+              { key: 'benchPressPR',    label: 'Bench Press' },
+              { key: 'squatPR',         label: 'Squat' },
+              { key: 'deadliftPR',      label: 'Deadlift' },
+              { key: 'overheadPressPR', label: 'Overhead Press' },
+              { key: 'barbellRowPR',    label: 'Barbell Row' },
+              { key: 'pullUpPR',        label: 'Pull-Up (toplam yük)' },
+            ] as const).map((lift) => (
+              <div className="ob-form-group" key={lift.key}>
+                <label className="ob-label">{lift.label} (kg) <span className="ob-optional">(opsiyonel)</span></label>
+                <input
+                  className={`ob-input ${errors[lift.key] ? 'error' : ''}`}
+                  type="number" step="0.5" placeholder="—"
+                  value={(form[lift.key] as number | null | undefined) ?? ''}
+                  onChange={(e) => set(lift.key, (e.target.value ? parseFloat(e.target.value) : null) as never)}
+                />
+                {errors[lift.key] && <span className="ob-field-error">{errors[lift.key]}</span>}
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════ STEP 7 — Vücut Fotoğrafları */}
+        {step === 7 && (
           <>
             <div className="ob-step-header">
               <div className="ob-step-icon">📷</div>
@@ -646,7 +815,12 @@ export default function ProfileCompletion() {
           {step > 1 && (
             <button className="ob-btn-back" onClick={goBack} disabled={loading}>← Geri</button>
           )}
-          {step < 5 ? (
+          {(step === 5 || step === 6) && (
+            <button className="ob-btn-back" onClick={skipStep} disabled={loading}>
+              Bu adımı atla
+            </button>
+          )}
+          {step < 7 ? (
             <button className="ob-btn-next" onClick={goNext}>
               Devam Et →
             </button>
