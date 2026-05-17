@@ -1,12 +1,12 @@
 services:
   frontend:
+    image: ghcr.io/onurnafiguzel/changebody-fe:${FE_VERSION:-0.1.0}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:5000
-    image: changebody-fe:latest
-    container_name: changebody-fe
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000}
+    container_name: changebody
     ports:
       - "3001:80"
     restart: unless-stopped
