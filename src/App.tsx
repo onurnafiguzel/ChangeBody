@@ -151,6 +151,46 @@ export default function App() {
           }
         />
         <Route
+          path="/programs/self/training/new"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <CreateProgramPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/programs/self/training/new/schedule"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <ScheduleBuilderPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/programs/self/nutrition/new"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <CreateNutritionPlanPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/programs/self/nutrition/new/builder"
+          element={
+            <RequireRole role="User">
+              <ProfileGuard>
+                <MealBuilderPage />
+              </ProfileGuard>
+            </RequireRole>
+          }
+        />
+        <Route
           path="/progress"
           element={
             <RequireRole role="User">

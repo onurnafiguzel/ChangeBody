@@ -468,7 +468,9 @@ export interface ActiveProgramDetailDto {
   name: string;
   description?: string; // nullable
   durationWeeks: number; // int32
-  coachName: string; // Coach full name (FirstName + LastName)
+  createdByType: "Self" | "Coach";
+  coachId?: string | null; // null if createdByType === 'Self'
+  coachName?: string | null; // null if createdByType === 'Self'
   startDate?: string; // date-time, nullable
   endDate?: string; // date-time, nullable
   difficulty: DifficultyLevel;
@@ -480,6 +482,17 @@ export interface ActiveProgramDetailDto {
   userHeight?: number | null; // cm
   userWeight?: number | null; // kg
   userGender?: "Male" | "Female" | "Other" | null;
+}
+
+// User'ın kendi başına oluşturduğu antrenman programı (ödeme/koç gerekmez).
+export interface CreateSelfTrainingProgramRequest {
+  name: string;
+  description?: string | null;
+  durationWeeks?: number; // 1..52, default 12 (BE)
+  difficulty?: DifficultyLevel | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  exercisesByDay?: Record<string, ExerciseDetail[]> | null;
 }
 
 // ============================================================================
@@ -653,8 +666,9 @@ export interface NutritionPlanListItemDto {
 export interface NutritionPlanDetailDto {
   id: string;
   userId: string;
-  coachId: string;
-  coachName: string;
+  coachId?: string | null; // null if createdByType === 'Self'
+  coachName?: string | null; // null if createdByType === 'Self'
+  createdByType: "Self" | "Coach";
   title: string;
   description?: string | null;
   isActive: boolean;
@@ -662,6 +676,13 @@ export interface NutritionPlanDetailDto {
   createdAt: string;
   updatedAt?: string | null;
   days: NutritionDayDto[];
+}
+
+// User'ın kendi başına oluşturduğu beslenme planı.
+export interface CreateSelfNutritionPlanRequest {
+  title: string;       // max 200
+  description?: string | null; // max 1000
+  days: Partial<Record<NutritionDayType, MealInput[]>>;
 }
 
 // ============================================================================
@@ -886,8 +907,13 @@ export const API_ENDPOINTS = {
   NUTRITION_PLAN_DETAIL: (planId: string) => `/api/nutrition-plans/${planId}`,
   NUTRITION_PLAN_ACTIVATE: (planId: string) => `/api/nutrition-plans/${planId}/activate`,
   NUTRITION_PLAN_DEACTIVATE: (planId: string) => `/api/nutrition-plans/${planId}/deactivate`,
+  NUTRITION_PLAN_EXPORT: (planId: string) => `/api/nutrition-plans/${planId}/export`,
   USER_ACTIVE_NUTRITION_PLAN: (userId: string) => `/api/users/${userId}/active-nutrition-plan`,
   USER_NUTRITION_PLANS: (userId: string) => `/api/users/${userId}/nutrition-plans`,
+  USER_NUTRITION_PLANS_SELF: (userId: string) => `/api/users/${userId}/nutrition-plans/self`,
+
+  // Self training program (user-created, no coach/payment required)
+  USER_TRAINING_PROGRAMS_SELF: (userId: string) => `/api/users/${userId}/training-programs/self`,
 
   // Payments
   PAYMENTS_PROCESS: "/api/payments",

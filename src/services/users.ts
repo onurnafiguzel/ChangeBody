@@ -19,9 +19,15 @@ export async function changePassword(userId: string, payload: ChangePasswordRequ
   await api.post(API_ENDPOINTS.USER_CHANGE_PASSWORD(userId), payload)
 }
 
-export async function getUserActiveProgram(userId: string): Promise<ActiveProgramDetailDto> {
-  const { data } = await api.get<ActiveProgramDetailDto>(API_ENDPOINTS.USER_ACTIVE_PROGRAM(userId))
-  return data
+// BE: tek program döner — Coach varsa Coach, yoksa Self. Hiçbiri yoksa 404.
+export async function getUserActiveProgram(userId: string): Promise<ActiveProgramDetailDto | null> {
+  try {
+    const { data } = await api.get<ActiveProgramDetailDto>(API_ENDPOINTS.USER_ACTIVE_PROGRAM(userId))
+    return data
+  } catch (err: unknown) {
+    if ((err as { response?: { status?: number } })?.response?.status === 404) return null
+    throw err
+  }
 }
 
 export async function getWaitingUserStatus(userId: string): Promise<WaitingUserStatusDto | null> {

@@ -1,6 +1,7 @@
 import api from './api'
 import type {
   CreateNutritionPlanRequest,
+  CreateSelfNutritionPlanRequest,
   NutritionPlanDetailDto,
   NutritionPlanListItemDto,
   UpdateNutritionPlanRequest,
@@ -9,6 +10,17 @@ import { API_ENDPOINTS } from '../types/api.types'
 
 export async function createNutritionPlan(payload: CreateNutritionPlanRequest): Promise<string> {
   const { data } = await api.post<string>(API_ENDPOINTS.NUTRITION_PLANS_CREATE, payload)
+  return data
+}
+
+export async function createSelfNutritionPlan(
+  userId: string,
+  payload: CreateSelfNutritionPlanRequest,
+): Promise<string> {
+  const { data } = await api.post<string>(
+    API_ENDPOINTS.USER_NUTRITION_PLANS_SELF(userId),
+    payload,
+  )
   return data
 }
 
@@ -32,14 +44,20 @@ export async function deactivateNutritionPlan(planId: string): Promise<void> {
   await api.post(API_ENDPOINTS.NUTRITION_PLAN_DEACTIVATE(planId))
 }
 
-export async function getUserActiveNutritionPlan(userId: string): Promise<NutritionPlanDetailDto> {
-  const { data } = await api.get<NutritionPlanDetailDto>(API_ENDPOINTS.USER_ACTIVE_NUTRITION_PLAN(userId))
-  return data
+// BE: tek plan döner — Coach varsa Coach, yoksa Self. Hiçbiri yoksa 404.
+export async function getUserActiveNutritionPlan(userId: string): Promise<NutritionPlanDetailDto | null> {
+  try {
+    const { data } = await api.get<NutritionPlanDetailDto>(API_ENDPOINTS.USER_ACTIVE_NUTRITION_PLAN(userId))
+    return data
+  } catch (err: unknown) {
+    if ((err as { response?: { status?: number } })?.response?.status === 404) return null
+    throw err
+  }
 }
 
-export async function exportUserActiveNutritionPlan(userId: string): Promise<Blob> {
+export async function exportNutritionPlan(planId: string): Promise<Blob> {
   const { data } = await api.get<Blob>(
-    `${API_ENDPOINTS.USER_ACTIVE_NUTRITION_PLAN(userId)}/export`,
+    API_ENDPOINTS.NUTRITION_PLAN_EXPORT(planId),
     { responseType: 'blob' },
   )
   return data

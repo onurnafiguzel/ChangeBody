@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { createTrainingProgram } from '../../services/training'
@@ -11,7 +11,10 @@ import { getStoredUser } from '../../services/auth'
 import { breakdownApiError, parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
 import { DifficultyLevel } from '../../types/api.types'
-import type { CreateTrainingProgramRequest, UserDto } from '../../types/api.types'
+import type {
+  CreateTrainingProgramRequest,
+  UserDto,
+} from '../../types/api.types'
 import '../../styles/dashboard.css'
 import '../../styles/onboarding.css'
 
@@ -19,8 +22,12 @@ type FormErrors = Partial<Record<keyof CreateTrainingProgramRequest, string>>
 
 export default function CreateProgramPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
-  const { userId } = useParams<{ userId: string }>()
+  const { userId: routeUserId } = useParams<{ userId: string }>()
+  const selfMode = location.pathname.startsWith('/programs/self/')
+  const currentUser = getStoredUser()
+  const userId = selfMode ? currentUser?.userId : routeUserId
 
   const [athlete, setAthlete] = useState<UserDto | null>(null)
   const [form, setForm] = useState<Partial<CreateTrainingProgramRequest>>({
@@ -34,11 +41,11 @@ export default function CreateProgramPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || selfMode) return
     getUserProfile(userId)
       .then(setAthlete)
       .catch(() => {/* başlık placeholder kalır */})
-  }, [userId])
+  }, [userId, selfMode])
 
   function setField<K extends keyof CreateTrainingProgramRequest>(
     key: K,
@@ -61,9 +68,8 @@ export default function CreateProgramPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!userId) return
-    const coach = getStoredUser()
-    if (!coach?.userId) { navigate('/login'); return }
+    if (!userId) { if (selfMode) navigate('/login'); return }
+    if (!currentUser?.userId) { navigate('/login'); return }
     setGlobalError(null)
 
     const validation = validate()
@@ -72,17 +78,29 @@ export default function CreateProgramPage() {
       return
     }
 
-    const payload: CreateTrainingProgramRequest = {
-      name: form.name!.trim(),
-      description: form.description?.trim() ? form.description.trim() : undefined,
-      userId,
-      coachId: coach.userId,
-      durationWeeks: form.durationWeeks!,
-      difficulty: form.difficulty as CreateTrainingProgramRequest['difficulty'],
-    }
-
     setSubmitting(true)
     try {
+      if (selfMode) {
+        // Self programlar tek POST ile oluşturulur — meta'yı schedule sayfasına
+        // taşı, gerçek POST orada (exercisesByDay ile birlikte) atılır.
+        navigate('/programs/self/training/new/schedule', {
+          state: {
+            name: form.name!.trim(),
+            description: form.description?.trim() ? form.description.trim() : null,
+            durationWeeks: form.durationWeeks!,
+            difficulty: form.difficulty ?? null,
+          },
+        })
+        return
+      }
+      const payload: CreateTrainingProgramRequest = {
+        name: form.name!.trim(),
+        description: form.description?.trim() ? form.description.trim() : undefined,
+        userId,
+        coachId: currentUser.userId,
+        durationWeeks: form.durationWeeks!,
+        difficulty: form.difficulty as CreateTrainingProgramRequest['difficulty'],
+      }
       const programId = await createTrainingProgram(payload)
       toast.success('Program oluşturuldu. Şimdi haftalık programı oluştur.')
       navigate(`/coach/programs/${programId}/schedule`, { replace: true })
@@ -115,19 +133,21 @@ export default function CreateProgramPage() {
         <div className="page-content">
           <div className="section-header" style={{ marginBottom: 16 }}>
             <button className="btn-back" onClick={() => navigate(-1)}>← Geri</button>
-            <span className="section-title">Yeni Program · {athleteName}</span>
+            <span className="section-title">
+              {selfMode ? 'Kendine Program Oluştur' : `Yeni Program · ${athleteName}`}
+            </span>
           </div>
 
           {globalError && <div className="error-banner">⚠️ {globalError}</div>}
 
-          {athlete ? (
+          {!selfMode && (athlete ? (
             <>
               <AthleteProfileSummary user={athlete} />
               <UserPhotosGrid userId={athlete.id} />
             </>
           ) : (
             <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
-          )}
+          ))}
 
           <form onSubmit={handleSubmit}>
             <div className="profile-edit-section">

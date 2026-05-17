@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
 import { getUserProfile } from '../../services/users'
+import { getStoredUser } from '../../services/auth'
 import AthleteProfileSummary from '../../components/coach/AthleteProfileSummary'
 import UserPhotosGrid from '../../components/shared/UserPhotosGrid'
 import Skeleton from '../../components/shared/Skeleton'
@@ -21,19 +22,23 @@ interface MetaForm {
 
 export default function CreateNutritionPlanPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
-  const { userId } = useParams<{ userId: string }>()
+  const { userId: routeUserId } = useParams<{ userId: string }>()
+  const selfMode = location.pathname.startsWith('/programs/self/')
+  const currentUser = getStoredUser()
+  const userId = selfMode ? currentUser?.userId : routeUserId
 
   const [athlete, setAthlete] = useState<UserDto | null>(null)
   const [form, setForm] = useState<MetaForm>({ title: '', description: '', mode: 'single' })
   const [errors, setErrors] = useState<Partial<Record<keyof MetaForm, string>>>({})
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || selfMode) return
     getUserProfile(userId)
       .then(setAthlete)
       .catch(() => {/* başlık placeholder kalır */})
-  }, [userId])
+  }, [userId, selfMode])
 
   function setField<K extends keyof MetaForm>(key: K, value: MetaForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -52,13 +57,18 @@ export default function CreateNutritionPlanPage() {
       return
     }
     toast.success('Şimdi öğünleri oluştur.')
-    navigate(`/coach/nutrition-plans/new/${userId}/builder`, {
-      state: {
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        mode: form.mode,
+    navigate(
+      selfMode
+        ? `/programs/self/nutrition/new/builder`
+        : `/coach/nutrition-plans/new/${userId}/builder`,
+      {
+        state: {
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          mode: form.mode,
+        },
       },
-    })
+    )
   }
 
   const athleteName = athlete
@@ -73,17 +83,19 @@ export default function CreateNutritionPlanPage() {
         <div className="page-content">
           <div className="section-header" style={{ marginBottom: 16 }}>
             <button className="btn-back" onClick={() => navigate(-1)}>← Geri</button>
-            <span className="section-title">Yeni Beslenme Programı · {athleteName}</span>
+            <span className="section-title">
+              {selfMode ? 'Kendine Beslenme Planı Oluştur' : `Yeni Beslenme Programı · ${athleteName}`}
+            </span>
           </div>
 
-          {athlete ? (
+          {!selfMode && (athlete ? (
             <>
               <AthleteProfileSummary user={athlete} />
               <UserPhotosGrid userId={athlete.id} />
             </>
           ) : (
             <Skeleton variant="card" height={180} style={{ marginBottom: 20 }} />
-          )}
+          ))}
 
           <form onSubmit={handleSubmit}>
             <div className="profile-edit-section">

@@ -1690,41 +1690,51 @@
     "/api/users/{userId}/active-program": {
       "get": {
         "tags": ["Training Programs"],
-        "summary": "Get active training program for user",
-        "description": "Retrieve the currently active training program assigned to a user",
-        "operationId": "GetUserActiveProgram",
+        "summary": "Get active training programs for user (Self + Coach, may be 0..2)",
+        "description": "Returns an array of all active training programs for the user — both Self-created and Coach-assigned. Empty array if user has no active program. Each entry includes `createdByType` (`Self` / `Coach`) and `coachId`/`coachName` (null for Self).",
+        "operationId": "GetUserActivePrograms",
         "parameters": [
           {
             "name": "userId",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "schema": { "type": "string", "format": "uuid" }
           }
         ],
         "responses": {
           "200": {
-            "description": "Active program retrieved successfully",
+            "description": "Active programs retrieved successfully (0..2 entries)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActiveProgramDetailDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No active program found for user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ActiveProgramDetailDto" }
                 }
               }
             }
           }
+        }
+      }
+    },
+    "/api/users/{userId}/training-programs/self": {
+      "post": {
+        "tags": ["Training Programs"],
+        "summary": "User creates their own training program (no payment / no coach required)",
+        "description": "The authenticated user creates a self-managed training program. Only the user themselves may call this. Creating a new Self program deactivates the user's previous Self program (one Self active per user). Coach-assigned programs are unaffected.",
+        "operationId": "CreateSelfTrainingProgram",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSelfTrainingProgramRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden — only the user themselves may create", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
         }
       }
     },
@@ -2402,32 +2412,60 @@
     "/api/users/{userId}/active-nutrition-plan": {
       "get": {
         "tags": ["Nutrition Plans"],
-        "summary": "Get user's latest active nutrition plan",
-        "description": "Returns the most recently created active plan for the user. Users may only query themselves; coaches and admins may query any user.",
-        "operationId": "GetUserActiveNutritionPlan",
+        "summary": "Get user's active nutrition plans (Self + Coach, may be 0..2)",
+        "description": "Returns all active nutrition plans for the user (Self-created and/or Coach-assigned). Each entry has `createdByType` and nullable `coachId`/`coachName`. Empty array if none active.",
+        "operationId": "GetUserActiveNutritionPlans",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
         ],
         "responses": {
           "200": {
-            "description": "Plan retrieved",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NutritionPlanDetailDto" } } }
+            "description": "Plans retrieved (0..2 entries)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/NutritionPlanDetailDto" }
+                }
+              }
+            }
           },
-          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
-          "404": { "description": "No active plan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
         }
       }
     },
-    "/api/users/{userId}/active-nutrition-plan/export": {
-      "get": {
+    "/api/users/{userId}/nutrition-plans/self": {
+      "post": {
         "tags": ["Nutrition Plans"],
-        "summary": "Export user's active nutrition plan as Excel (.xlsx)",
-        "description": "Returns the active nutrition plan as an .xlsx file. Each NutritionDayType is rendered on its own sheet; meals are stacked vertically.",
-        "operationId": "ExportUserActiveNutritionPlan",
+        "summary": "User creates their own nutrition plan (no payment / no coach required)",
+        "description": "Only the authenticated user may create their own Self plan. Creating a new Self plan deactivates the user's previous Self plan; Coach-assigned plans are unaffected.",
+        "operationId": "CreateSelfNutritionPlan",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "userId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSelfNutritionPlanRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "string", "format": "uuid" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationProblemDetails" } } } },
+          "403": { "description": "Forbidden — only the user themselves may create", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/api/nutrition-plans/{planId}/export": {
+      "get": {
+        "tags": ["Nutrition Plans"],
+        "summary": "Export a nutrition plan as Excel (.xlsx)",
+        "description": "Returns the plan as an .xlsx file. Each NutritionDayType is rendered on its own sheet; meals are stacked vertically. Users may only export their own plans; coaches/admins may export any.",
+        "operationId": "ExportNutritionPlan",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "planId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
         ],
         "responses": {
           "200": {
@@ -2439,7 +2477,7 @@
             }
           },
           "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
-          "404": { "description": "No active plan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+          "404": { "description": "Plan not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
         }
       }
     },
@@ -3329,6 +3367,28 @@
           }
         }
       },
+      "CreateSelfTrainingProgramRequest": {
+        "type": "object",
+        "required": ["name"],
+        "description": "User-owned (self-created) training program. No coach reference; the program's `createdByType` is automatically set to `Self`.",
+        "properties": {
+          "name":          { "type": "string", "minLength": 1 },
+          "description":   { "type": "string", "nullable": true },
+          "durationWeeks": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 52, "default": 12 },
+          "difficulty":    { "type": "string", "nullable": true, "enum": ["Beginner", "Intermediate", "Advanced"] },
+          "startDate":     { "type": "string", "format": "date-time", "nullable": true },
+          "endDate":       { "type": "string", "format": "date-time", "nullable": true },
+          "exercisesByDay": {
+            "type": "object",
+            "description": "Optional weekly schedule keyed by Day-1, Day-2, etc.",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/ExerciseDetail" }
+            }
+          }
+        }
+      },
       "UpdateDailyProgramRequest": {
         "type": "object",
         "description": "Set weekly exercise schedule. Key format: Day-1, Day-2, etc.",
@@ -3401,9 +3461,21 @@
             "type": "integer",
             "format": "int32"
           },
+          "createdByType": {
+            "type": "string",
+            "enum": ["Self", "Coach"],
+            "description": "Indicates whether the user created this program themselves (`Self`) or a coach assigned it (`Coach`)."
+          },
+          "coachId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Coach ID if `createdByType=Coach`, otherwise null."
+          },
           "coachName": {
             "type": "string",
-            "description": "Coach full name (FirstName + LastName)"
+            "nullable": true,
+            "description": "Coach full name (FirstName + LastName). Null if `createdByType=Self`."
           },
           "startDate": {
             "type": "string",
@@ -3896,8 +3968,8 @@
       "type": "object",
       "properties": {
         "profile":               { "$ref": "#/components/schemas/UserDashboardProfileDto" },
-        "activeTrainingProgram": { "allOf": [{ "$ref": "#/components/schemas/ActiveProgramDetailDto" }], "nullable": true },
-        "activeNutritionPlan":   { "allOf": [{ "$ref": "#/components/schemas/NutritionPlanDetailDto" }], "nullable": true },
+        "activeTrainingPrograms": { "type": "array", "items": { "$ref": "#/components/schemas/ActiveProgramDetailDto" }, "description": "0..2 entries — at most one Self and one Coach-assigned active program per user." },
+        "activeNutritionPlans":   { "type": "array", "items": { "$ref": "#/components/schemas/NutritionPlanDetailDto" }, "description": "0..2 entries — at most one Self and one Coach-assigned active plan per user." },
         "waitingStatus":         { "allOf": [{ "$ref": "#/components/schemas/WaitingUserStatusDto" }], "nullable": true },
         "packageProgress":       { "allOf": [{ "$ref": "#/components/schemas/PackageProgressDto" }], "nullable": true, "description": "Active package window + progress percentage. Null if user has no active (non-expired) completed payment." }
       }
@@ -4013,6 +4085,23 @@
         }
       }
     },
+    "CreateSelfNutritionPlanRequest": {
+      "type": "object",
+      "required": ["title", "days"],
+      "description": "User-owned (self-created) nutrition plan. No coach reference; `createdByType` is set to `Self`.",
+      "properties": {
+        "title":       { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000, "nullable": true },
+        "days": {
+          "type": "object",
+          "description": "Dictionary keyed by NutritionDayType (WorkoutDay / OffDay).",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MealInput" }
+          }
+        }
+      }
+    },
     "UpdateNutritionPlanRequest": {
       "type": "object",
       "required": ["title", "days"],
@@ -4068,8 +4157,9 @@
       "properties": {
         "id": { "type": "string", "format": "uuid" },
         "userId": { "type": "string", "format": "uuid" },
-        "coachId": { "type": "string", "format": "uuid" },
-        "coachName": { "type": "string" },
+        "coachId": { "type": "string", "format": "uuid", "nullable": true, "description": "Coach ID if `createdByType=Coach`, otherwise null." },
+        "coachName": { "type": "string", "nullable": true, "description": "Null if `createdByType=Self`." },
+        "createdByType": { "type": "string", "enum": ["Self", "Coach"] },
         "title": { "type": "string" },
         "description": { "type": "string", "nullable": true },
         "isActive": { "type": "boolean" },

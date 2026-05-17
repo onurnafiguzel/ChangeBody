@@ -7,13 +7,16 @@ import FoodFormModal from '../../components/foods/FoodFormModal'
 import {
   activateNutritionPlan,
   createNutritionPlan,
+  createSelfNutritionPlan,
   getNutritionPlan,
   updateNutritionPlan,
 } from '../../services/nutritionPlans'
+import { getStoredUser } from '../../services/auth'
 import { parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
 import type {
   CreateNutritionPlanRequest,
+  CreateSelfNutritionPlanRequest,
   FoodDto,
   MealInput,
   NutritionDayType,
@@ -162,6 +165,8 @@ export default function MealBuilderPage() {
   const toast = useToast()
   const { userId: routeUserId, planId } = useParams<{ userId?: string; planId?: string }>()
   const location = useLocation()
+  const selfMode = location.pathname.startsWith('/programs/self/')
+  const currentUser = getStoredUser()
   const initialMeta = (location.state as BuilderState | null) ?? null
   const isEdit = !!planId
 
@@ -172,15 +177,22 @@ export default function MealBuilderPage() {
   const [hydrating, setHydrating] = useState<boolean>(isEdit)
   const [hydrateError, setHydrateError] = useState<string | null>(null)
 
-  const userId = isEdit ? editUserId : routeUserId
+  const userId = isEdit
+    ? editUserId
+    : (selfMode ? currentUser?.userId : routeUserId)
 
   // Redirect if create-mode with no meta (deep-link with no state)
   useEffect(() => {
     if (isEdit) return
     if (!initialMeta) {
-      navigate(`/coach/nutrition-plans/new/${routeUserId}`, { replace: true })
+      navigate(
+        selfMode
+          ? '/programs/self/nutrition/new'
+          : `/coach/nutrition-plans/new/${routeUserId}`,
+        { replace: true },
+      )
     }
-  }, [isEdit, initialMeta, navigate, routeUserId])
+  }, [isEdit, initialMeta, navigate, routeUserId, selfMode])
 
   // Food library state
   const [foods, setFoods] = useState<FoodDto[]>([])
@@ -447,6 +459,17 @@ export default function MealBuilderPage() {
         } else {
           toast.success('Değişiklikler kaydedildi.')
         }
+      } else if (selfMode) {
+        // Self POST: plan oluşturulur ve BE tarafından otomatik aktif yapılır.
+        // Ayrı activate çağrısı YAPILMAZ — eski Self plan zaten deaktive edilir.
+        if (!currentUser?.userId) { navigate('/login'); return }
+        const selfPayload: CreateSelfNutritionPlanRequest = {
+          title: payload.title,
+          description: payload.description,
+          days: payload.days,
+        }
+        resolvedPlanId = await createSelfNutritionPlan(currentUser.userId, selfPayload)
+        toast.success('Plan oluşturuldu ve aktifleştirildi.')
       } else {
         resolvedPlanId = await createNutritionPlan(payload)
         if (activate) {
@@ -456,7 +479,8 @@ export default function MealBuilderPage() {
           toast.success('Plan taslak olarak kaydedildi.')
         }
       }
-      navigate(-1)
+      if (selfMode) navigate('/programs')
+      else navigate(-1)
     } catch (err) {
       toast.error(parseApiError(err, 'Kaydedilemedi.'))
     } finally {

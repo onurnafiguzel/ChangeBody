@@ -1,6 +1,7 @@
 import api from './api'
 import type {
   ActiveProgramDetailDto,
+  CreateSelfTrainingProgramRequest,
   CreateTrainingProgramRequest,
   UpdateDailyProgramRequest,
   UpdateProgressRequest,
@@ -23,6 +24,17 @@ export async function exportTrainingProgram(programId: string): Promise<Blob> {
 export async function createTrainingProgram(payload: CreateTrainingProgramRequest): Promise<string> {
   // BE response: oluşturulan programın UUID'si (raw string)
   const { data } = await api.post<string>(API_ENDPOINTS.PROGRAMS_CREATE, payload)
+  return data
+}
+
+export async function createSelfTrainingProgram(
+  userId: string,
+  payload: CreateSelfTrainingProgramRequest,
+): Promise<string> {
+  const { data } = await api.post<string>(
+    API_ENDPOINTS.USER_TRAINING_PROGRAMS_SELF(userId),
+    payload,
+  )
   return data
 }
 

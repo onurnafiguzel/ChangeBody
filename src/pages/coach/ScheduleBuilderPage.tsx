@@ -1,14 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/shared/Header'
 import { Sidebar, BottomNav } from '../../components/shared/Navigation'
-import { activateProgram, getTrainingProgram, updateDailyProgram } from '../../services/training'
+import {
+  activateProgram,
+  createSelfTrainingProgram,
+  getTrainingProgram,
+  updateDailyProgram,
+} from '../../services/training'
 import { getExercises, getMuscleGroups } from '../../services/exercises'
+import { getStoredUser } from '../../services/auth'
 import { parseApiError } from '../../utils/errorHandler'
 import { useToast } from '../../components/shared/Toast'
 import { MUSCLE_TR, DIFFICULTY_TR, MUSCLE_ICONS } from '../../components/exercises/ExerciseCard'
 import type {
   ActiveProgramDetailDto,
+  CreateSelfTrainingProgramRequest,
+  DifficultyLevel,
   ExerciseDetail,
   ExerciseDto,
   UpdateDailyProgramRequest,
@@ -50,10 +58,25 @@ function dayOrder(key: string): number {
   return m ? parseInt(m[1], 10) : 9999
 }
 
+interface SelfBuilderMeta {
+  name: string
+  description?: string | null
+  durationWeeks: number
+  difficulty?: DifficultyLevel | null
+}
+
 export default function ScheduleBuilderPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
   const { programId } = useParams<{ programId: string }>()
+  const selfMode = location.pathname.startsWith('/programs/self/')
+  const backPath = selfMode ? '/programs' : '/coach/programs'
+  const currentUser = getStoredUser()
+  // Self create akışı: programId yok, meta CreateProgramPage'ten state ile geldi.
+  const selfCreateMeta = (selfMode && !programId)
+    ? ((location.state as SelfBuilderMeta | null) ?? null)
+    : null
 
   // Program meta
   const [program, setProgram] = useState<ActiveProgramDetailDto | null>(null)
@@ -97,6 +120,29 @@ export default function ScheduleBuilderPage() {
 
   // ─── Mount ────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Self create akışı: programId yok, mevcut state ile sentetik program kur.
+    if (!programId && selfCreateMeta) {
+      setProgram({
+        id: '',
+        name: selfCreateMeta.name,
+        description: selfCreateMeta.description ?? undefined,
+        durationWeeks: selfCreateMeta.durationWeeks,
+        createdByType: 'Self',
+        coachId: null,
+        coachName: null,
+        difficulty: (selfCreateMeta.difficulty ?? 'Intermediate') as ActiveProgramDetailDto['difficulty'],
+        status: 'InProgress',
+        dailyExercises: {},
+      })
+      getMuscleGroups().then(setMuscleGroups).catch(() => setMuscleGroups([]))
+      setPageLoading(false)
+      return
+    }
+    // Self create akışında meta yoksa (deep-link), CreateProgramPage'e geri dön.
+    if (!programId && selfMode) {
+      navigate('/programs/self/training/new', { replace: true })
+      return
+    }
     if (!programId) return
     setPageLoading(true)
     Promise.all([
@@ -258,7 +304,6 @@ export default function ScheduleBuilderPage() {
   }
 
   async function handlePublish() {
-    if (!programId) return
     const totalExercises = days.reduce((sum, d) => sum + d.exercises.length, 0)
     if (days.length === 0 || totalExercises === 0) {
       toast.warning('En az 1 gün ve 1 egzersiz eklemelisin.')
@@ -266,10 +311,27 @@ export default function ScheduleBuilderPage() {
     }
     setSaving(true)
     try {
+      if (selfCreateMeta) {
+        // Self create akışı: tek POST ile oluştur + aktive (BE Self programı
+        // otomatik aktive eder, ayrı activate çağrısı gerekmez).
+        if (!currentUser?.userId) { navigate('/login'); return }
+        const payload: CreateSelfTrainingProgramRequest = {
+          name: selfCreateMeta.name,
+          description: selfCreateMeta.description ?? null,
+          durationWeeks: selfCreateMeta.durationWeeks,
+          difficulty: selfCreateMeta.difficulty ?? null,
+          exercisesByDay: buildPayload(),
+        }
+        await createSelfTrainingProgram(currentUser.userId, payload)
+        toast.success('Program oluşturuldu ve aktifleştirildi.')
+        navigate(backPath, { replace: true })
+        return
+      }
+      if (!programId) return
       await updateDailyProgram(programId, buildPayload())
       await activateProgram(programId)
       toast.success('Program yayınlandı ve aktifleştirildi.')
-      navigate('/coach/programs', { replace: true })
+      navigate(backPath, { replace: true })
     } catch (err) {
       toast.error(parseApiError(err, 'Yayınlama başarısız.'))
     } finally {
@@ -302,7 +364,7 @@ export default function ScheduleBuilderPage() {
           <Header />
           <div className="page-content">
             <div className="error-banner">⚠️ {pageError ?? 'Program bulunamadı.'}</div>
-            <button className="btn-back" onClick={() => navigate('/coach/programs')}>← Programlara dön</button>
+            <button className="btn-back" onClick={() => navigate(backPath)}>← Programlara dön</button>
           </div>
           <BottomNav />
         </div>
@@ -497,7 +559,7 @@ export default function ScheduleBuilderPage() {
           <div className="profile-edit-actions" style={{ marginTop: 24 }}>
             <button
               className="btn-secondary"
-              onClick={() => navigate('/coach/programs')}
+              onClick={() => navigate(backPath)}
               disabled={saving}
             >
               İptal
