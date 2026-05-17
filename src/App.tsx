@@ -25,7 +25,7 @@ import FitnessGoalsPage from './pages/coach/FitnessGoalsPage'
 import CoachProfilePage from './pages/coach/CoachProfilePage'
 import CoachProfileEditPage from './pages/coach/CoachProfileEditPage'
 import AccessDenied from './pages/AccessDenied'
-import { getStoredUser } from './services/auth'
+import { getStoredUser, logout } from './services/auth'
 import { getProfileCompletionStatus } from './services/users'
 
 type Role = 'User' | 'Coach' | 'Admin'
@@ -34,6 +34,13 @@ function homeForRole(role?: Role): string {
   if (role === 'Coach') return '/coach/dashboard'
   if (role === 'Admin') return '/admin/dashboard' // future
   return '/dashboard'
+}
+
+function LogoutRoute() {
+  useEffect(() => {
+    logout()
+  }, [])
+  return null
 }
 
 function AuthGate() {
@@ -87,6 +94,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<AuthGate />} />
         <Route path="/signup" element={<AuthGate />} />
+        <Route path="/logout" element={<LogoutRoute />} />
         <Route path="/access-denied" element={<AccessDenied />} />
 
         {/* User onboarding (User-only) */}
