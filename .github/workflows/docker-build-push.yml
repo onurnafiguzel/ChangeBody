@@ -13,7 +13,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: onurnafiguzel/changebody-fe
-  VITE_API_BASE_URL: http://localhost:5000
+  VITE_API_BASE_URL: https://api.changehere.org
 
 jobs:
   verify:
@@ -89,3 +89,31 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to production
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy frontend to server
+        run: |
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.DEPLOY_HOST }} bash <<'EOF'
+            set -e
+            cd /opt/changemind/compose
+            echo "Pulling latest frontend image..."
+            docker compose pull frontend
+            echo "Restarting frontend..."
+            docker compose up -d frontend
+            echo "Cleaning up old images..."
+            docker image prune -f
+            echo "Deploy completed successfully."
+          EOF
